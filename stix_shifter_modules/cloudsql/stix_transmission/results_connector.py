@@ -16,9 +16,7 @@ class ResultsConnector(BaseResultsConnector):
         statement = re.sub(r'--[^\n]*', '', statement)
         # Find the number of rows we're partitioning by
         m = re.match(r'.*PARTITIONED\s+EVERY\s+(\d+)\s+ROWS.*', statement, re.MULTILINE | re.DOTALL)
-        if m is not None:
-            return int(m.groups()[0])
-        return None
+        return int(m.groups()[0]) if m is not None else None
 
     def records(self, query_id, start_rec, end_rec):
         job = self.api_client.get_job(query_id)
@@ -26,7 +24,10 @@ class ResultsConnector(BaseResultsConnector):
         try:
             units = self.get_rows_partition(job['statement'])
         except Exception as e:
-            self.logger.error('Error fetching query statement {}. Will pull all record pages.'.format(e))
+            self.logger.error(
+                f'Error fetching query statement {e}. Will pull all record pages.'
+            )
+
         if units is None:
             r = self.api_client.get_result(query_id)
             return r.iloc[start_rec : end_rec+1]
@@ -56,15 +57,13 @@ class ResultsConnector(BaseResultsConnector):
             response_json = response.to_dict(orient='records')
         except ValueError as e:
             # error thrown by cloud sql library if results query fail
-            response_json = {}
-            response_json['message'] = repr(e)
+            response_json = {'message': repr(e)}
         except Exception as e:
-            self.logger.error('error when getting search results: {}'.format(e))
+            self.logger.error(f'error when getting search results: {e}')
             raise
 
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = success
+        return_obj = {'success': success}
         if success:
             return_obj['data'] = response_json
         else:

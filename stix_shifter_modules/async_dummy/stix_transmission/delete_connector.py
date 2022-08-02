@@ -13,12 +13,12 @@ class DeleteConnector(BaseDeleteConnector):
             response_code = response_dict["code"]
 
             # Construct a response object
-            return_obj = dict()
+            return_obj = {}
             if response_code == 200:
                 return_obj['success'] = response_code['success']
             else:
                 ErrorResponder.fill_error(return_obj, response_dict, ['message'])
             return return_obj
         except Exception as err:
-            self.logger.error('error when deleting search {}:'.format(err))
+            self.logger.error(f'error when deleting search {err}:')
             raise

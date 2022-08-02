@@ -11,18 +11,14 @@ class DeleteConnector(BaseDeleteConnector):
         try:
             response = self.api_client.delete_result(search_id)
             if response is None:
-                response_json = {}
-                response_json['message'] = "Delete failed"
+                response_json = {'message': "Delete failed"}
             else:
                 success = True
                 response_json = json.loads(response.to_json(orient='records'))
         except ValueError as e:
-            response_json = {}
-            response_json['message'] = repr(e)
-
+            response_json = {'message': repr(e)}
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = success
+        return_obj = {'success': success}
         if not success:
             return_obj['error'] = response_json['message']
 

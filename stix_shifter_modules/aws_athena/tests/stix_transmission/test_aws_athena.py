@@ -37,23 +37,35 @@ class AWSMockJsonResponse:
 
     @staticmethod
     def assume_role(**kwargs):
-        json_response = {'Credentials': {'AccessKeyId': 'abc', 'SecretAccessKey': 'xyz', 'SessionToken': '123abc'}}
-        return json_response
+        return {
+            'Credentials': {
+                'AccessKeyId': 'abc',
+                'SecretAccessKey': 'xyz',
+                'SessionToken': '123abc',
+            }
+        }
 
     @staticmethod
     def list_work_groups(**kwargs):
-        json_response = {
-            'WorkGroups': [{
-                'Name': 'AmazonAthenaPreviewFunctionality',
-                'State': 'ENABLED',
-                'Description': '',
-                'CreationTime': datetime.datetime(2020, 7, 2, 18, 44, 21, 668000, tzinfo=tzlocal())
-            }, {
-                'Name': 'primary',
-                'State': 'ENABLED',
-                'Description': '',
-                'CreationTime': datetime.datetime(2020, 6, 10, 16, 36, 33, 561000, tzinfo=tzlocal())
-            }],
+        return {
+            'WorkGroups': [
+                {
+                    'Name': 'AmazonAthenaPreviewFunctionality',
+                    'State': 'ENABLED',
+                    'Description': '',
+                    'CreationTime': datetime.datetime(
+                        2020, 7, 2, 18, 44, 21, 668000, tzinfo=tzlocal()
+                    ),
+                },
+                {
+                    'Name': 'primary',
+                    'State': 'ENABLED',
+                    'Description': '',
+                    'CreationTime': datetime.datetime(
+                        2020, 6, 10, 16, 36, 33, 561000, tzinfo=tzlocal()
+                    ),
+                },
+            ],
             'ResponseMetadata': {
                 'RequestId': '241b172b-13d2-4497-90c6-743e4a6046ac',
                 'HTTPStatusCode': 200,
@@ -62,16 +74,15 @@ class AWSMockJsonResponse:
                     'date': 'Wed, 30 Sep 2020 07:04:32 GMT',
                     'x-amzn-requestid': '241b172b-13d2-4497-90c6-743e4a6046ac',
                     'content-length': '413',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
     @staticmethod
     def start_query_execution(**kwargs):
-        json_response = {
+        return {
             'QueryExecutionId': '4214e100-9990-4161-9038-b431ec45661a',
             'ResponseMetadata': {
                 'RequestId': '3139018f-7c6f-45ed-8462-26a3cd566472',
@@ -81,63 +92,51 @@ class AWSMockJsonResponse:
                     'date': 'Wed, 30 Sep 2020 07:14:03 GMT',
                     'x-amzn-requestid': '3139018f-7c6f-45ed-8462-26a3cd566472',
                     'content-length': '59',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
     @staticmethod
     def stop_query_execution(**kwargs):
-        json_response = {"success": True}
-        return json_response
+        return {"success": True}
 
     @staticmethod
     def get_paginator(method='get_query_results'):
-        paginator_obj = AWSAthenaPaginate()
-        return paginator_obj
+        return AWSAthenaPaginate()
 
     @staticmethod
     def delete_objects(**kwargs):
-        json_response = {"success": True}
-        return json_response
+        return {"success": True}
 
     @staticmethod
     def get_query_results(**kwargs):
-        json_response = {
+        return {
             'UpdateCount': 0,
             'ResultSet': {
-                'Rows': [{
-                    'Data': [{
-                        'VarCharValue': 'version'
-                    }, {
-                        'VarCharValue': 'account'
-                    }, {
-                        'VarCharValue': 'interfaceid'
-                    }, {
-                        'VarCharValue': 'sourceaddress'
-                    }, {
-                        'VarCharValue': 'protocol'
-                    }, {
-                        'VarCharValue': 'action'
-                    }
-                    ]
-                }, {
-                    'Data': [{
-                        'VarCharValue': '2'
-                    }, {
-                        'VarCharValue': '979326520502'
-                    }, {
-                        'VarCharValue': 'eni-0bb88d3d170cebfc0'
-                    }, {
-                        'VarCharValue': '99.79.68.141'
-                    }, {
-                        'VarCharValue': '6'
-                    }, {
-                        'VarCharValue': 'ACCEPT'
-                    }]
-                }],
+                'Rows': [
+                    {
+                        'Data': [
+                            {'VarCharValue': 'version'},
+                            {'VarCharValue': 'account'},
+                            {'VarCharValue': 'interfaceid'},
+                            {'VarCharValue': 'sourceaddress'},
+                            {'VarCharValue': 'protocol'},
+                            {'VarCharValue': 'action'},
+                        ]
+                    },
+                    {
+                        'Data': [
+                            {'VarCharValue': '2'},
+                            {'VarCharValue': '979326520502'},
+                            {'VarCharValue': 'eni-0bb88d3d170cebfc0'},
+                            {'VarCharValue': '99.79.68.141'},
+                            {'VarCharValue': '6'},
+                            {'VarCharValue': 'ACCEPT'},
+                        ]
+                    },
+                ],
             },
             'ResponseMetadata': {
                 'RequestId': '396c4d92-ca40-4807-ae91-74b393a37aa7',
@@ -147,16 +146,15 @@ class AWSMockJsonResponse:
                     'date': 'Wed, 30 Sep 2020 08:02:32 GMT',
                     'x-amzn-requestid': '396c4d92-ca40-4807-ae91-74b393a37aa7',
                     'content-length': '7214',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
     @staticmethod
     def get_query_execution(**kwargs):
-        json_response = {
+        return {
             'QueryExecution': {
                 'QueryExecutionId': '3fdb8f84-6ad6-4f7c-8e9e-7bf3db87c274',
                 'Query': 'SELECT * FROM logs_db.vpc_flow_logs limit 1',
@@ -167,8 +165,12 @@ class AWSMockJsonResponse:
                 'QueryExecutionContext': {},
                 'Status': {
                     'State': 'SUCCEEDED',
-                    'SubmissionDateTime': datetime.datetime(2020, 9, 30, 13, 31, 28, 856000, tzinfo=tzlocal()),
-                    'CompletionDateTime': datetime.datetime(2020, 9, 30, 13, 31, 31, 313000, tzinfo=tzlocal())
+                    'SubmissionDateTime': datetime.datetime(
+                        2020, 9, 30, 13, 31, 28, 856000, tzinfo=tzlocal()
+                    ),
+                    'CompletionDateTime': datetime.datetime(
+                        2020, 9, 30, 13, 31, 31, 313000, tzinfo=tzlocal()
+                    ),
                 },
                 'Statistics': {
                     'EngineExecutionTimeInMillis': 2280,
@@ -176,9 +178,9 @@ class AWSMockJsonResponse:
                     'TotalExecutionTimeInMillis': 2457,
                     'QueryQueueTimeInMillis': 117,
                     'QueryPlanningTimeInMillis': 1819,
-                    'ServiceProcessingTimeInMillis': 60
+                    'ServiceProcessingTimeInMillis': 60,
                 },
-                'WorkGroup': 'primary'
+                'WorkGroup': 'primary',
             },
             'ResponseMetadata': {
                 'RequestId': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
@@ -188,12 +190,11 @@ class AWSMockJsonResponse:
                     'date': 'Wed, 30 Sep 2020 08:10:16 GMT',
                     'x-amzn-requestid': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
                     'content-length': '1275',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
 
 class AWSAthenaPaginate(AWSMockJsonResponse):
@@ -205,7 +206,7 @@ class MockStatusResponseRunning:
 
     @staticmethod
     def get_query_execution(**kwargs):
-        json_response = {
+        return {
             'QueryExecution': {
                 'QueryExecutionId': '3fdb8f84-6ad6-4f7c-8e9e-7bf3db87c274',
                 'Query': 'SELECT * FROM logs_db.vpc_flow_logs limit 1',
@@ -216,8 +217,12 @@ class MockStatusResponseRunning:
                 'QueryExecutionContext': {},
                 'Status': {
                     'State': 'RUNNING',
-                    'SubmissionDateTime': datetime.datetime(2020, 9, 30, 13, 31, 28, 856000, tzinfo=tzlocal()),
-                    'CompletionDateTime': datetime.datetime(2020, 9, 30, 13, 31, 31, 313000, tzinfo=tzlocal())
+                    'SubmissionDateTime': datetime.datetime(
+                        2020, 9, 30, 13, 31, 28, 856000, tzinfo=tzlocal()
+                    ),
+                    'CompletionDateTime': datetime.datetime(
+                        2020, 9, 30, 13, 31, 31, 313000, tzinfo=tzlocal()
+                    ),
                 },
                 'Statistics': {
                     'EngineExecutionTimeInMillis': 2280,
@@ -225,9 +230,9 @@ class MockStatusResponseRunning:
                     'TotalExecutionTimeInMillis': 2457,
                     'QueryQueueTimeInMillis': 117,
                     'QueryPlanningTimeInMillis': 1819,
-                    'ServiceProcessingTimeInMillis': 60
+                    'ServiceProcessingTimeInMillis': 60,
                 },
-                'WorkGroup': 'primary'
+                'WorkGroup': 'primary',
             },
             'ResponseMetadata': {
                 'RequestId': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
@@ -237,46 +242,44 @@ class MockStatusResponseRunning:
                     'date': 'Wed, 30 Sep 2020 08:10:16 GMT',
                     'x-amzn-requestid': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
                     'content-length': '1275',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
 
 class AWSMockJsonResponseALB:
 
     @staticmethod
     def get_query_results(**kwargs):
-        json_response = {
+        return {
             'UpdateCount': 0,
             'ResultSet': {
-                'Rows': [{
-                    'Data': [{
-                        'VarCharValue': 'type'
-                    }, {
-                        'VarCharValue': 'time'
-                    }, {
-                        'VarCharValue': 'elb'
-                    }, {
-                        'VarCharValue': 'useridentity'
-                    }]
-                }, {
-                    'Data': [{
-                        'VarCharValue': 'http'
-                    }, {
-                        'VarCharValue': '2020-06-15T07:04:18.737784Z'
-                    }, {
-                        'VarCharValue': 'app/apache-alb/d68fc3aeae65675d'
-                    }, {
-                        'VarCharValue': '{type=IAMUser, principalid=AIDA6IBDIZS3JEPRO2CBA, '
-                                        'arn=arn:aws:iam::979326520502:user/murali_k@hcl.com, accountid=979326520502, '
-                                        'invokedby=signin.amazonaws.com, accesskeyid=ASIA6IBDIZS3PHL7F75J, '
-                                        'username=murali_k@hcl.com, sessioncontext={attributes={'
-                                        'mfaauthenticated=false, creationdate=2019-10-15T06:12:34Z} '
-                    }]
-                }],
+                'Rows': [
+                    {
+                        'Data': [
+                            {'VarCharValue': 'type'},
+                            {'VarCharValue': 'time'},
+                            {'VarCharValue': 'elb'},
+                            {'VarCharValue': 'useridentity'},
+                        ]
+                    },
+                    {
+                        'Data': [
+                            {'VarCharValue': 'http'},
+                            {'VarCharValue': '2020-06-15T07:04:18.737784Z'},
+                            {'VarCharValue': 'app/apache-alb/d68fc3aeae65675d'},
+                            {
+                                'VarCharValue': '{type=IAMUser, principalid=AIDA6IBDIZS3JEPRO2CBA, '
+                                'arn=arn:aws:iam::979326520502:user/murali_k@hcl.com, accountid=979326520502, '
+                                'invokedby=signin.amazonaws.com, accesskeyid=ASIA6IBDIZS3PHL7F75J, '
+                                'username=murali_k@hcl.com, sessioncontext={attributes={'
+                                'mfaauthenticated=false, creationdate=2019-10-15T06:12:34Z} '
+                            },
+                        ]
+                    },
+                ],
             },
             'ResponseMetadata': {
                 'RequestId': '396c4d92-ca40-4807-ae91-74b393a37aa7',
@@ -286,23 +289,22 @@ class AWSMockJsonResponseALB:
                     'date': 'Wed, 30 Sep 2020 08:02:32 GMT',
                     'x-amzn-requestid': '396c4d92-ca40-4807-ae91-74b393a37aa7',
                     'content-length': '7214',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
     @staticmethod
     def get_query_execution(**kwargs):
-        json_response = {
+        return {
             'QueryExecution': {
                 'QueryExecutionId': '3fdb8f84-6ad6-4f7c-8e9e-7bf3db87c274',
                 'Query': 'SELECT * FROM logs_db.vpc_flow_logs limit 1',
                 'StatementType': 'DML',
                 'ResultConfiguration': {
                     'OutputLocation': 's3://queryresults-athena-s3/3fdb8f84-6ad6-4f7c-8e9e-7bf3db87c274.csv'
-                }
+                },
             },
             'ResponseMetadata': {
                 'RequestId': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
@@ -312,22 +314,19 @@ class AWSMockJsonResponseALB:
                     'date': 'Wed, 30 Sep 2020 08:10:16 GMT',
                     'x-amzn-requestid': '870cfb1e-734f-40b2-bab0-cc44affa21d4',
                     'content-length': '1275',
-                    'connection': 'keep-alive'
+                    'connection': 'keep-alive',
                 },
-                'RetryAttempts': 0
-            }
+                'RetryAttempts': 0,
+            },
         }
-        return json_response
 
     @staticmethod
     def delete_objects(**kwargs):
-        json_response = {"success": True}
-        return json_response
+        return {"success": True}
 
     @staticmethod
     def get_paginator(method='get_query_results'):
-        paginator_obj = AWSAthenaPaginateALB()
-        return paginator_obj
+        return AWSAthenaPaginateALB()
 
 
 class AWSAthenaPaginateALB(AWSMockJsonResponseALB):

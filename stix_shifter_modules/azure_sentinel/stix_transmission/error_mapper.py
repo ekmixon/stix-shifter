@@ -43,7 +43,7 @@ class ErrorMapper:
          :param json_data: dict, error response of api_call
          :param return_obj: dict, returns error and error code"""
         error_type = ''
-        
+
         if isinstance(json_data, tuple):
             error_type = 'HTTPSConnectionError'
         else:
@@ -58,6 +58,6 @@ class ErrorMapper:
             error_code = ERROR_MAPPING[error_type]
 
         if error_code == ErrorMapper.DEFAULT_ERROR:
-            ErrorMapper.logger.debug("failed to map: " + str(json_data))
+            ErrorMapper.logger.debug(f"failed to map: {str(json_data)}")
 
         ErrorMapperBase.set_error_code(return_obj, error_code)

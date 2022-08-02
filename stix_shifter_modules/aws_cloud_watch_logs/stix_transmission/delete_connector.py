@@ -13,13 +13,12 @@ class DeleteConnector(BaseDeleteConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
-            query = dict()
             if ':' in search_id:
                 search_id = search_id.split(':')[0]
-            query['queryId'] = search_id
+            query = {'queryId': search_id}
             self.client.stop_query(**query)
             return_obj['success'] = True
         except Exception as ex:

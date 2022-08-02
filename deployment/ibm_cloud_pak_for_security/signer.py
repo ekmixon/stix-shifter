@@ -30,14 +30,13 @@ class Encryptor(object):
                         print('verify:error:untrusted certificate')
                         exit(6)
                 except Exception as ex:
-                    print('verify:error:certificate signature failure: ' + str(ex))
+                    print(f'verify:error:certificate signature failure: {str(ex)}')
                     exit(5)
                 self.MESSAGES.append('cert chain validated')
-        else:
-            if cert:
-                self.KEY = cert
-            elif filepaths:
-                self.KEY_FILE_PATH = filepaths
+        elif cert:
+            self.KEY = cert
+        elif filepaths:
+            self.KEY_FILE_PATH = filepaths
         self.PASSWORD = password
 
     def validate_chain(self, file_names, last_cert):
@@ -48,22 +47,18 @@ class Encryptor(object):
                 store.add_cert(cert)
         store_ctx = X509StoreContext(store, load_certificate(FILETYPE_PEM, last_cert))
         result = store_ctx.verify_certificate()
-        if result is None:
-            return True
-        else:
-            return False
+        return result is None
 
     def encrypt(self, message):
         private_key = self._get_private_key()
-        signature = private_key.sign(
+        return private_key.sign(
             message,
             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
+                salt_length=padding.PSS.MAX_LENGTH,
             ),
-            hashes.SHA256()
+            hashes.SHA256(),
         )
-        return signature
 
     def is_certificate(self, file_path_or_content):
         if isinstance(file_path_or_content, list):
@@ -71,7 +66,7 @@ class Encryptor(object):
         if isinstance(file_path_or_content, bytes):
             return 'CERTIFICATE' in file_path_or_content.decode('utf-8')
         with open(file_path_or_content, "rb") as f:
-            for l in f.readlines():
+            for l in f:
                 if 'CERTIFICATE' in l.decode('utf-8'):
                     return True
         return False
@@ -100,10 +95,7 @@ class Encryptor(object):
         elif self.KEY:
             data = self.KEY
 
-        public_key = serialization.load_pem_public_key(
-                    data, backend=default_backend()
-                )
-        return public_key
+        return serialization.load_pem_public_key(data, backend=default_backend())
 
     def _get_public_key_from_cert(self):
         if self.KEY_FILE_PATH:
@@ -134,8 +126,7 @@ if __name__ == "__main__":
 
     bundle_files = []
     for r, d, f in os.walk(package_file):
-        for file in f:
-            bundle_files.append(os.path.join(r, file)[len(package_file)+1:])
+        bundle_files.extend(os.path.join(r, file)[len(package_file)+1:] for file in f)
     if sys.argv[1] == 'sign':
         encryptor = Encryptor(sys.argv[2])
         hash_lines = ''
@@ -145,7 +136,7 @@ if __name__ == "__main__":
                 with open(os.path.join(package_file, f), 'rb') as file:
                     content = file.read()
                 content_hash = hashlib.sha256(content).hexdigest()
-                hash_lines += f + ' ' + content_hash + '\n'
+                hash_lines += f'{f} {content_hash}' + '\n'
             with open(os.path.join(package_file, signature_path_hashes), 'w') as file:
                 file.write(hash_lines)
             check = encryptor.encrypt(hash_lines.encode())
@@ -172,7 +163,7 @@ if __name__ == "__main__":
             try:
                 encryptor.verify(hash_content.encode(), check_content)
             except InvalidSignature as ex:
-                print('verify:error:hashes signature incorrect:'+str(ex))
+                print(f'verify:error:hashes signature incorrect:{str(ex)}')
                 exit(3)
             for hash_item in hash_lines:
                 hash_items = hash_item.split()
@@ -186,12 +177,12 @@ if __name__ == "__main__":
             bundle_files.remove(signature_path_check)
             bundle_files.remove(signature_path_cert)
             if bundle_files:
-                print('verify:error:signature mismatch: ' + str(bundle_files))
+                print(f'verify:error:signature mismatch: {bundle_files}')
                 exit(4)
             else:
                 message = 'verify:ok'
                 for m in encryptor.MESSAGES:
-                    message += ':' + m
+                    message += f':{m}'
                 print(message)
         else:
             print('verify:error:archive is not signed')

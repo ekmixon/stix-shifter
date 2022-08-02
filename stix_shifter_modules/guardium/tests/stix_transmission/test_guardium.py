@@ -83,7 +83,7 @@ class TestGuardiumConnection(unittest.TestCase, object):
             "port": 22,
             "selfSignedCert": False
         }
-        
+
         search_id = "108cb8b0-0744-4dd9-8e35-ea8311cd6211"
         transmission = stix_transmission.StixTransmission('guardium',  connection, config)
         status_response = transmission.status(search_id)

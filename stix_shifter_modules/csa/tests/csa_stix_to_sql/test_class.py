@@ -36,7 +36,7 @@ translation = stix_translation.StixTranslation()
 
 
 def _translate_query(stix_pattern, dialect):
-    return translation.translate("csa:{}".format(dialect), 'query', '{}', stix_pattern)
+    return translation.translate(f"csa:{dialect}", 'query', '{}', stix_pattern)
 
 
 def _test_query_assertions(query, selections, from_statement, where_statement):

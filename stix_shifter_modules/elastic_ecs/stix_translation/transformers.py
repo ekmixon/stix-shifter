@@ -18,8 +18,7 @@ class PathToStixRegistryKey(ValueTransformer):
                 map_root_key = stix_root_keys_mapping[splited[0]]
                 splited[0] = map_root_key
             splited = splited[:-1]
-            key = '\\'.join(splited)
-            return key;
+            return '\\'.join(splited);
         except ValueError:
             LOGGER.error("Cannot convert root key to Stix formatted windows registry key")
 

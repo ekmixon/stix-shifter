@@ -43,8 +43,8 @@ class StatusConnector(BaseStatusConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             search_id = search_id.split(':')[0]
             if 'dummy' in search_id:
@@ -58,8 +58,11 @@ class StatusConnector(BaseStatusConnector):
             if return_obj['status'] == 'COMPLETED':
                 return_obj['progress'] = 100
             elif return_obj['status'] == 'RUNNING':
-                query_submit_time = response_dict.get('QueryExecution').get('Status').get('SubmissionDateTime')
-                if query_submit_time:
+                if (
+                    query_submit_time := response_dict.get('QueryExecution')
+                    .get('Status')
+                    .get('SubmissionDateTime')
+                ):
                     current_time = datetime.datetime.now(tzlocal())
                     time_delta = current_time - query_submit_time
                     progress = time_delta.total_seconds()

@@ -43,17 +43,15 @@ class ResultsConnector(BaseResultsConnector):
                     ErrorResponder.fill_error(return_obj, response_dict,
                                               ['BESAPI', 'ClientQueryResults', 'QueryResult', '+IsFailure=1',
                                                '~Result'])
+            elif ErrorResponder.is_plain_string(response_txt):
+                ErrorResponder.fill_error(return_obj, message=response_txt)
             else:
-                if ErrorResponder.is_plain_string(response_txt):
-                    ErrorResponder.fill_error(return_obj, message=response_txt)
-                else:
-                    raise UnexpectedResponseException
+                raise UnexpectedResponseException
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')
         return return_obj
 
     @staticmethod
@@ -150,10 +148,12 @@ class ResultsConnector(BaseResultsConnector):
         # /tmp/.X0-lock, 1541424894", "ResponseTime": 0}
         result = computer_obj['result']
         obj_list = result.split(',')
-        formatted_obj = {}
         computer_identity = str(computer_obj['computerID']) + '-' + computer_obj['computerName']
-        formatted_obj['computer_identity'] = computer_identity
-        formatted_obj['subQueryID'] = computer_obj['subQueryID']
+        formatted_obj = {
+            'computer_identity': computer_identity,
+            'subQueryID': computer_obj['subQueryID'],
+        }
+
         if result.startswith('process'):
             formatted_obj = self._format_process_obj(obj_list, formatted_obj)
         elif result.startswith('file'):

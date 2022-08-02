@@ -13,12 +13,12 @@ class QueryConnector(BaseQueryConnector):
             response_code = response_dict["code"]
 
             # Construct a response object
-            return_obj = dict()
+            return_obj = {}
             if response_code == 200:
                 return_obj['search_id'] = response_dict['query_id']
             else:
                 ErrorResponder.fill_error(return_obj, response_dict, ['message'])
             return return_obj
         except Exception as err:
-            self.logger.error('error when creating search: {}'.format(err))
+            self.logger.error(f'error when creating search: {err}')
             raise

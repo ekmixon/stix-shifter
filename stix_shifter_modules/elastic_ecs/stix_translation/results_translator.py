@@ -25,16 +25,18 @@ class ResultTranslator(JSONToStix):
                 event = result['event']
                 if event.get('original'):
                     result['event']['mime_type_event'] = 'text/plain'
-        
+
         data = json.dumps(results, indent=4)
 
         results = super().translate_results(data_source, data)
         json_data = json.loads(data)
 
-        if len(results['objects']) - 1 == len(json_data):
-            for i in range(1, len(results['objects'])):
-                results['objects'][i]['number_observed'] = 1
-        else:
-            raise RuntimeError("Incorrect number of result objects after translation. Found: {}, expected: {}.".format(len(results['objects']) - 1, len(json_data)))
+        if len(results['objects']) - 1 != len(json_data):
+            raise RuntimeError(
+                f"Incorrect number of result objects after translation. Found: {len(results['objects']) - 1}, expected: {len(json_data)}."
+            )
 
+
+        for i in range(1, len(results['objects'])):
+            results['objects'][i]['number_observed'] = 1
         return results

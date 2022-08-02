@@ -8,8 +8,7 @@ class ResultsTranslator(JSONToStix):
 
     def __init__(self, options, dialect, base_file_path=None, callback=None):
         super().__init__(options, dialect, base_file_path, callback)
-        show_events = Connector.get_show_events_mode({'options': options})
-        if show_events:
+        if show_events := Connector.get_show_events_mode({'options': options}):
             filepath = os.path.abspath(os.path.join(base_file_path, "json", "to_stix_map_events.json"))
             self.map_data = self.read_json(filepath, options)
 
@@ -25,10 +24,12 @@ class ResultsTranslator(JSONToStix):
         results = super().translate_results(data_source, data)
         json_data = json.loads(data)
 
-        if len(results['objects']) - 1 == len(json_data):
-            for i in range(1, len(results['objects'])):
-                results['objects'][i]['number_observed'] = 1
-        else:
-            raise RuntimeError("Incorrect number of result objects after translation. Found: {}, expected: {}.".format(len(results['objects']) - 1, len(json_data)))
+        if len(results['objects']) - 1 != len(json_data):
+            raise RuntimeError(
+                f"Incorrect number of result objects after translation. Found: {len(results['objects']) - 1}, expected: {len(json_data)}."
+            )
 
+
+        for i in range(1, len(results['objects'])):
+            results['objects'][i]['number_observed'] = 1
         return results

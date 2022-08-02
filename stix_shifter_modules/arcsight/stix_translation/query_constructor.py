@@ -47,8 +47,8 @@ class QueryStringPatternTranslator:
     def __init__(self, pattern: Pattern, data_model_mapper, time_range):
         self.dmm = data_model_mapper
         self._time_range = time_range
-        self.qualifier_list = list()
-        self.qualified_queries = list()
+        self.qualifier_list = []
+        self.qualified_queries = []
         self.pattern = pattern
         self.translated = self.parse_expression(pattern)
 
@@ -61,7 +61,7 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _format_equality(value) -> str:
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _format_single_quotes(value) -> str:
@@ -69,16 +69,16 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _format_double_quotes(value) -> str:
-        return '\"{}\"'.format(value)
+        return f'\"{value}\"'
 
     @staticmethod
     def _format_like(value) -> str:
-        value = "'{}'".format(value.replace('%', '*'))
+        value = f"'{value.replace('%', '*')}'"
         return value
 
     @staticmethod
     def _negate_comparison(comparison_string):
-        return "NOT {}".format(comparison_string)
+        return f"NOT {comparison_string}"
 
     @staticmethod
     def _escape_value(value) -> str:
@@ -91,10 +91,7 @@ class QueryStringPatternTranslator:
         elif isinstance(value, str):
             value = value.replace('\\', '\\\\')
 
-        if bool(re.search(r"\s", value)):
-            return '\"{}\"'.format(value)
-        else:
-            return '{}'.format(value)
+        return f'\"{value}\"' if bool(re.search(r"\s", value)) else f'{value}'
 
     @staticmethod
     def _check_value_type(value, expression, mapped_fields_array):
@@ -109,8 +106,8 @@ class QueryStringPatternTranslator:
         compile_ip_regex = re.compile(IP_ADDRESS)
         value = list(map(str, value)) if isinstance(value, list) else [str(value)]
         res = value[0].strip('][').split(', ')
-        value_type = []
         if stix_object in ref_objects or stix_field in ref_objects:
+            value_type = []
             for each in res:
                 if compile_mac_regex.search(each):
                     value_type.append('mac')
@@ -150,15 +147,17 @@ class QueryStringPatternTranslator:
                 else:
                     comparison_string += "{value}".format(value=value)
             elif not value:
-                if expression.comparator in [ComparisonComparators.Equal, ComparisonComparators.NotEqual]:
-                    comparator = self.arcsight_operator_lookup.get(expression.comparator)
-                    comparison_string += "{mapped_field} {comparator}".format(mapped_field=mapped_field,
-                                                                              comparator=comparator)
-                else:
+                if expression.comparator not in [
+                    ComparisonComparators.Equal,
+                    ComparisonComparators.NotEqual,
+                ]:
                     raise SearchFeatureNotSupportedError("Empty string search is not supported for this operation")
 
+                comparator = self.arcsight_operator_lookup.get(expression.comparator)
+                comparison_string += "{mapped_field} {comparator}".format(mapped_field=mapped_field,
+                                                                          comparator=comparator)
             elif any(mapped_field in match for match in INTEGER_LOOKUP_FIELDS) and expression.comparator \
-                    in [ComparisonComparators.Like, ComparisonComparators.Matches]:
+                        in [ComparisonComparators.Like, ComparisonComparators.Matches]:
                 # check for excluding integer type attributes in the LIKE/MATCHES search query
                 raise SearchFeatureNotSupportedError("'LIKE / MATCHES' Operator is not supported for integer fields")
             else:
@@ -172,13 +171,15 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _is_reference_value(stix_field):
-        return stix_field == 'src_ref.value' or stix_field == 'dst_ref.value'
+        return stix_field in ['src_ref.value', 'dst_ref.value']
 
     @staticmethod
     def _lookup_comparison_operator(self, expression_operator):
         if expression_operator not in self.comparator_lookup:
             raise NotImplementedError(
-                "Comparison operator {} unsupported for ArcSight UDS adapter".format(expression_operator.name))
+                f"Comparison operator {expression_operator.name} unsupported for ArcSight UDS adapter"
+            )
+
         return self.comparator_lookup[expression_operator]
 
     def _parse_time_range(self, qualifier, time_range):
@@ -194,11 +195,8 @@ class QueryStringPatternTranslator:
                 time_range_list = [each.group() for each in time_range_iterator]
                 for index, time in enumerate(time_range_list):
                     match_iso8601 = re.compile(ISO_8601_PATTERN).match
-                    if match_iso8601(time) is not None and len(time) > 20:
-                        pass
-                    else:
+                    if match_iso8601(time) is None or len(time) <= 20:
                         time_range_list[index] = time.replace('Z', '.000Z')
-            # Default time range Start time = Now - 5 minutes and Stop time = Now
             else:
                 stop_time = datetime.utcnow()
                 start_time = stop_time - timedelta(minutes=time_range)
@@ -225,11 +223,12 @@ class QueryStringPatternTranslator:
                 value = self._format_equality(expression.value)
             elif expression.comparator == ComparisonComparators.In:
                 value = self._format_set(expression.value)
-            elif expression.comparator == ComparisonComparators.Equal or \
-                    expression.comparator == ComparisonComparators.NotEqual:
+            elif expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+            ]:
                 # Should be in single-quotes
                 value = self._format_equality(expression.value)
-            # '%' -> '*' wildcard
             elif expression.comparator == ComparisonComparators.Like:
                 if '_' in expression.value:
                     raise SearchFeatureNotSupportedError(
@@ -248,7 +247,7 @@ class QueryStringPatternTranslator:
 
             if len(mapped_fields_array) > 1 and not self._is_reference_value(stix_field):
                 # More than one data source field maps to the STIX attribute, so group comparisons together.
-                grouped_comparison_string = "(" + comparison_string + ")"
+                grouped_comparison_string = f"({comparison_string})"
                 comparison_string = grouped_comparison_string
 
             if expression.negated:
@@ -260,15 +259,15 @@ class QueryStringPatternTranslator:
 
                 comparison_string = self._negate_comparison(comparison_string)
 
-            return "{}".format(comparison_string)
+            return f"{comparison_string}"
         elif isinstance(expression, CombinedComparisonExpression):
             operator = self._lookup_comparison_operator(self, expression.operator)
             expression_01 = self._parse_expression(expression.expr1)
             expression_02 = self._parse_expression(expression.expr2)
             if not expression_01 or not expression_02:
                 return ''
-            query_string = "{} {} {}".format(expression_01, operator, expression_02)
-            return "{}".format(query_string)
+            query_string = f"{expression_01} {operator} {expression_02}"
+            return f"{query_string}"
         elif isinstance(expression, ObservationExpression):
             self._parse_time_range(qualifier, self._time_range)
             return self._parse_expression(expression.comparison_expression, qualifier)
@@ -280,7 +279,7 @@ class QueryStringPatternTranslator:
             if self.qualifier_list[-2] == self.qualifier_list[-1]:
                 self.qualifier_list.pop(-1)
                 if expression_01 and expression_02:
-                    return "({}) {} ({})".format(expression_01, operator, expression_02)
+                    return f"({expression_01}) {operator} ({expression_02})"
                 else:
                     return ''
             else:
@@ -294,8 +293,9 @@ class QueryStringPatternTranslator:
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -316,21 +316,24 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options):
 
     # check for combining the queries for grouped time qualifiers in multiple observations
     if len(query.qualified_queries) == 0 and query.translated is not None:
-        translate_query_dict = dict()
-        translate_query_dict['query'] = query.translated
-        translate_query_dict['start_time'] = query.qualifier_list[0][0]
-        translate_query_dict['end_time'] = query.qualifier_list[0][1]
+        translate_query_dict = {
+            'query': query.translated,
+            'start_time': query.qualifier_list[0][0],
+            'end_time': query.qualifier_list[0][1],
+        }
+
         translate_query_dict = json.dumps(translate_query_dict)
         final_queries.append(translate_query_dict)
-    # check for forming multiple queries for individual time qualifiers in multiple observations
     elif query.translated == 'None' and len(query.qualified_queries) > 0:
         query.qualifier_list = list(zip(*query.qualifier_list))
         queries_string = query.qualified_queries
         for index, each_query in enumerate(queries_string, start=0):
-            translate_query_dict = dict()
-            translate_query_dict['query'] = each_query[0]
-            translate_query_dict['start_time'] = query.qualifier_list[0][index]
-            translate_query_dict['end_time'] = query.qualifier_list[1][index]
+            translate_query_dict = {
+                'query': each_query[0],
+                'start_time': query.qualifier_list[0][index],
+                'end_time': query.qualifier_list[1][index],
+            }
+
             translate_query_dict = json.dumps(translate_query_dict)
             final_queries.append(translate_query_dict)
     return final_queries

@@ -8,6 +8,4 @@ class DeleteConnector(BaseDeleteConnector):
         self.api_client = api_client
 
     def delete_query_connection(self, search_id):
-        return_obj = dict()
-        return_obj['success'] = True
-        return return_obj
+        return {'success': True}

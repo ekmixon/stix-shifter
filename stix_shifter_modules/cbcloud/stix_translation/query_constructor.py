@@ -98,7 +98,7 @@ class CbCloudQueryStringPatternTranslator:
 
     @staticmethod
     def _negate_comparison(comparison_string: str) -> str:
-        return '-{}'.format(comparison_string)
+        return f'-{comparison_string}'
 
     @staticmethod
     def _datetime_to_cbcloud_timestamp(timestamp: datetime) -> str:
@@ -159,8 +159,10 @@ class CbCloudQueryStringPatternTranslator:
             comparator = self.comparator_lookup[expression.comparator]
 
             # Some values are formatted differently based on how they're being compared
-            if (expression.comparator == ComparisonComparators.Equal or
-                    expression.comparator == ComparisonComparators.NotEqual):
+            if expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+            ]:
                 value = self._format_equality(expression.value)
             elif expression.comparator == ComparisonComparators.LessThan:
                 value = self._format_lt(expression.value)

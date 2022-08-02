@@ -13,14 +13,14 @@ class DeleteConnector(BaseDeleteConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
+        return_obj = {}
         try:
             search_id_length = len(search_id.split(':'))
             search_id_values = search_id.split(':')
-            if search_id_length in [2, 3]:
+            if search_id_length in {2, 3}:
                 search_session_id, user_session_id = search_id_values[0], search_id_values[1]
             else:
-                raise SyntaxError("Invalid search_id format : " + str(search_id))
+                raise SyntaxError(f"Invalid search_id format : {str(search_id)}")
 
             response = self.api_client.delete_search(search_session_id, user_session_id)
             raw_response = response.read()
@@ -39,7 +39,7 @@ class DeleteConnector(BaseDeleteConnector):
             else:
                 raise Exception(raw_response)
         except Exception as err:
-            return_obj = dict()
+            return_obj = {}
             response_error = err
             ErrorResponder.fill_error(return_obj, response_error, ['message'])
 

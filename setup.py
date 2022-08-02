@@ -26,11 +26,14 @@ os.mkdir(TMP_MAPPING_DIR)
 
 for module in [o for o in os.listdir(MODULES_DIR) if (os.path.isdir(os.path.join(MODULES_DIR,o)) and not o.startswith('_'))]:
     if not os.path.isfile(os.path.join(MODULES_DIR, module, 'SKIP.ME')):
-        print(module + '..')
-        connector_module = importlib.import_module("stix_shifter_modules." + module + ".entry_point")
+        print(f'{module}..')
+        connector_module = importlib.import_module(
+            f"stix_shifter_modules.{module}.entry_point"
+        )
+
         entry_point = connector_module.EntryPoint()
         mapping = entry_point.get_mapping()
-        with open(os.path.join(TMP_MAPPING_DIR, module+'.json'), 'w', encoding="utf-8") as f:
+        with open(os.path.join(TMP_MAPPING_DIR, f'{module}.json'), 'w', encoding="utf-8") as f:
             json.dump(mapping, f, sort_keys=False, indent=4)
 
 def fill_connectors(projects, modules_path):
@@ -38,7 +41,7 @@ def fill_connectors(projects, modules_path):
                if (os.path.isdir(os.path.join(modules_path, name)) and (not name.startswith('__')))]
     for module in modules:
         if not os.path.isfile(os.path.join(modules_path, module, SKIP_ME)):
-            projects['stix_shifter_modules_' + module] = ['stix_shifter_modules/' + module]
+            projects[f'stix_shifter_modules_{module}'] = [f'stix_shifter_modules/{module}']
 
 # The mode determines how the stix-shifter is packaged
 # 1 = Include everything in 1 whl package

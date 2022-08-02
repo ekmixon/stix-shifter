@@ -17,8 +17,7 @@ class ArcsightToRegistryKey(ValueTransformer):
             if splited[0] in stix_root_keys_mapping:
                 map_root_key = stix_root_keys_mapping[splited[0]]
                 splited[0] = map_root_key
-            converted_root_key = '\\'.join(splited)
-            return converted_root_key
+            return '\\'.join(splited)
         except ValueError:
             LOGGER.error("Cannot convert root key to Stix formatted windows registry key")
 
@@ -31,13 +30,12 @@ class ArcsightToRegistryValue(ValueTransformer):
         stix_datatype_mapping = {"DWORD": "REG_DWORD", "EXPAND_SZ": "REG_EXPAND_SZ", "MULTI_SZ": "REG_MULTI_SZ",
                                  "BINARY": "REG_BINARY", "QWORD": "REG_QWORD", "NONE": "REG_NONE",
                                  "default_type": "REG_SZ"}
-        converted_value = list()
-        registry_value_dict = dict()
+        registry_value_dict = {}
         for each_value in registry_values:
             for key in each_value:
                 is_type = False
                 if key == "registry_string":
-                    for reg_type in stix_datatype_mapping.keys():
+                    for reg_type in stix_datatype_mapping:
                         if reg_type in each_value[key]:
                             is_type = True
                             registry_value_dict['data_type'] = stix_datatype_mapping[reg_type]
@@ -47,9 +45,7 @@ class ArcsightToRegistryValue(ValueTransformer):
                         registry_value_dict['data'] = each_value[key]
                 if key == "name":
                     registry_value_dict[key] = each_value[key]
-        converted_value.append(registry_value_dict)
-
-        return converted_value
+        return [registry_value_dict]
 
 
 class ArcsightFormatMac(ValueTransformer):

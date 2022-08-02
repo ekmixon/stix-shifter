@@ -19,7 +19,8 @@ class QueryTranslator(BaseQueryTranslator):
             return self.map_data[stix_object_name]
         else:
             raise DataMappingException(
-                "Unable to map object `{}` into SQL".format(stix_object_name))
+                f"Unable to map object `{stix_object_name}` into SQL"
+            )
 
     def map_field(self, stix_object_name, stix_property_name):
         if stix_object_name in self.map_data and stix_property_name in self.map_data[stix_object_name]["fields"]:
@@ -31,8 +32,7 @@ class QueryTranslator(BaseQueryTranslator):
         # Temporary default selections, this will change based on upcoming config override and the STIX pattern that is getting converted to SQL.
         # ^ is it still relevant?
         field_list = self.select_fields['default']
-        sql_select = ", ".join(field_list)
-        return sql_select
+        return ", ".join(field_list)
 
     def transform_antlr(self, data, antlr_parsing_object):
         """
@@ -46,6 +46,6 @@ class QueryTranslator(BaseQueryTranslator):
         """
 
         self.logger.info("Converting STIX2 Pattern to sql")
-        query_string = query_constructor.translate_pattern(
-            antlr_parsing_object, self, number_rows=self.rows)
-        return query_string
+        return query_constructor.translate_pattern(
+            antlr_parsing_object, self, number_rows=self.rows
+        )

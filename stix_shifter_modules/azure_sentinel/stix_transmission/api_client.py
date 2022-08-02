@@ -9,7 +9,7 @@ class APIClient:
         :param connection: dict, connection dict
         :param configuration: dict,config dict"""
 
-        headers = dict()
+        headers = {}
         url_modifier_function = None
         default_api_version = 'v1.0'
         auth = configuration.get('auth')
@@ -17,9 +17,8 @@ class APIClient:
         self.host = connection.get('host')
         self.timeout = connection['options'].get('timeout')
 
-        if auth:
-            if 'access_token' in auth:
-                headers['Authorization'] = "Bearer " + auth['access_token']
+        if auth and 'access_token' in auth:
+            headers['Authorization'] = "Bearer " + auth['access_token']
 
         self.client = RestApiClient(connection.get('host'),
                                     connection.get('port', None),
@@ -31,8 +30,7 @@ class APIClient:
 
     def ping_box(self):
         """Ping the endpoint."""
-        params = dict()
-        params['$top'] = 1
+        params = {'$top': 1}
         return self.client.call_api(self.endpoint, 'GET', urldata=params, timeout=self.timeout)
 
     def run_search(self, query_expression, length):
@@ -40,19 +38,15 @@ class APIClient:
         :param query_expression: str, search_id
         :param length: int,length value
         :return: response, json object"""
-        headers = dict()
-        headers['Accept'] = 'application/json'
-        params = dict()
-        params['$filter'] = query_expression
-        params['$top'] = length
+        headers = {'Accept': 'application/json'}
+        params = {'$filter': query_expression, '$top': length}
         return self.client.call_api(self.endpoint, 'GET', headers, urldata=params, timeout=self.timeout)
 
     def next_page_run_search(self, next_page_url):
         """get the response from azure_sentinel endpoints
         :param next_page_url: str, search_id
         :return: response, json object"""
-        headers = dict()
-        headers['Accept'] = 'application/json'
+        headers = {'Accept': 'application/json'}
         url = next_page_url.split('?', maxsplit=1)[1]
-        endpoint = self.endpoint + '?' + url
+        endpoint = f'{self.endpoint}?{url}'
         return self.client.call_api(endpoint, 'GET', headers, timeout=self.timeout)

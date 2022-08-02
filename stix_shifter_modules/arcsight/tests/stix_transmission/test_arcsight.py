@@ -90,7 +90,7 @@ class TestArcsightConnection(unittest.TestCase):
         mock_session_id.return_value = 'Dhoup23b3wL7tBlWWIeFPg8JHEf29qD1tNRJba4Jsyg.'
         mock_query_res.return_value = ArcsightMockResponse(200, '{"sessionId":"2"}')
         query = "{\"query\": \"destinationPort = 22\", \"start_time\": \"2020-06-0111:20:20.000-05:00\", " \
-                "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
+                    "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
         transmission = stix_transmission.StixTransmission('arcsight', CONNECTION, CONFIG)
         query_response = transmission.query(query)
         assert query_response is not None
@@ -108,7 +108,7 @@ class TestArcsightConnection(unittest.TestCase):
                                                                 '"message": "Starting time '
                                                                 '2020-06-0111:20:20.000-05:00 format is wrong"}]}')
         query = "{\"query\": \"destinationPort = 22\", \"start_time\": \"2020-06-0111:20:20.000-05:00\", " \
-                "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
+                    "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
         transmission = stix_transmission.StixTransmission('arcsight', CONNECTION, CONFIG)
         query_response = transmission.query(query)
 
@@ -127,7 +127,7 @@ class TestArcsightConnection(unittest.TestCase):
             "connection was forcibly closed by the remote host', None, 10054, "
             "None))")
         query = "{\"query\": \"destinationPort = 22\", \"start_time\": \"2020-06-0111:20:20.000-05:00\", " \
-                "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
+                    "\"end_time\": \"2020-07-01T12:00:44.000-05:00\"}"
         transmission = stix_transmission.StixTransmission('arcsight', CONNECTION, CONFIG)
         query_response = transmission.query(query)
 

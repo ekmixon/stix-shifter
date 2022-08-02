@@ -11,15 +11,11 @@ class InfobloxToDomainName(ValueTransformer):
 
     @staticmethod
     def transform(url):
-        if url is None:
-            return None
-        return url.rstrip('.')
+        return None if url is None else url.rstrip('.')
 
     @staticmethod
     def untransform(url):
-        if url is None:
-            return None
-        return url + '.'
+        return None if url is None else f'{url}.'
 
 class TimestampToSeconds(ValueTransformer):
     """
@@ -32,8 +28,14 @@ class TimestampToSeconds(ValueTransformer):
         time_pattern = '%Y-%m-%dT%H:%M:%S.%fZ'
         epoch = datetime(1970, 1, 1)
         try:
-            converted_time = int(((datetime.strptime(timestamp, time_pattern) - epoch).total_seconds()))
-            return converted_time
+            return int(
+                (
+                    (
+                        datetime.strptime(timestamp, time_pattern) - epoch
+                    ).total_seconds()
+                )
+            )
+
         except ValueError:
             LOGGER.error("Cannot convert the timestamp %s to seconds", timestamp)
         return None

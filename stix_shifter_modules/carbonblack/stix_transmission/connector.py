@@ -56,13 +56,14 @@ class Connector(BaseSyncConnector):
     def _get_events(process_data: dict, time_window: list):  # add time window to function
         raw_events = []
         for event_type in supported_event_types:
-            event_key = '{}_complete'.format(event_type)
+            event_key = f'{event_type}_complete'
             if event_key in process_data:
                 for event_data in process_data[event_key]:
                     parsed_event = parse_raw_event_to_obj(event_type, event_data)
                     if parsed_event is not None:
-                        timestamp = get_timestamp_by_event_type(event_obj=parsed_event, event_type=event_type)
-                        if timestamp:
+                        if timestamp := get_timestamp_by_event_type(
+                            event_obj=parsed_event, event_type=event_type
+                        ):
                             if (time_window and is_timestamp_in_window(timestamp, time_window)) or (not time_window):
                                 parsed_event['parsed_timestamp'] = format_timestamp(timestamp)
                                 raw_events.append({
@@ -78,11 +79,10 @@ class Connector(BaseSyncConnector):
             response = self.api_client.ping_box()
             return self._handle_errors(response, return_obj)
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')
 
     def create_results_connection(self, query, offset, length):
         response_txt = None
@@ -106,8 +106,7 @@ class Connector(BaseSyncConnector):
                         if events_parsed_response.get('success', False):
                             events = Connector._get_events(events_parsed_response['data'], time_window)
                             for raw_event in events:
-                                event = create_event_obj(process, raw_event)
-                                if event:
+                                if event := create_event_obj(process, raw_event):
                                     all_events.append(event)
                                     if 0 < self.result_limit <= len(all_events):
                                         events_limit_reached = True
@@ -119,8 +118,7 @@ class Connector(BaseSyncConnector):
             return {'success': True, 'data': all_events}
 
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')

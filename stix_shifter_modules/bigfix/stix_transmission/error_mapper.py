@@ -38,7 +38,7 @@ class ErrorMapper(ErrorMapperBase):
                     error_code = result_error
 
         if error_code == ErrorMapper.DEFAULT_ERROR:
-            ErrorMapper.logger.debug('failed to map: ' + str(json_data))
+            ErrorMapper.logger.debug(f'failed to map: {str(json_data)}')
 
         if isinstance(error_code, tuple):
             ErrorMapperBase.set_error_code(return_obj, error_code[0], error_code[1])

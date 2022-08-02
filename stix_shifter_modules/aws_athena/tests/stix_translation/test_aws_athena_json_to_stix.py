@@ -445,7 +445,7 @@ class TestAwsResultsToStix(unittest.TestCase):
         assert custom_object.keys() == {'type', 'finding_id', 'arn', 'createdat', 'partition', 'resource',
                                         'schemaversion', 'service', 'updatedat'}
         assert custom_object['arn'] == 'arn:aws:guardduty:us-east-1:979326520502:detector/6ab6e6ee780ed' \
-                                       '494f3b7ca56acdc74df/finding/7ab9d1cb6248e05a0e419a79528761cb'
+                                           '494f3b7ca56acdc74df/finding/7ab9d1cb6248e05a0e419a79528761cb'
         assert custom_object['finding_id'] == '7ab9d1cb6248e05a0e419a79528761cb'
         assert custom_object['createdat'] == '2020-07-31T06:37:13.745Z'
         assert custom_object['partition'] == 'aws'

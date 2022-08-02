@@ -18,21 +18,26 @@ class ResultsConnector(BaseResultsConnector):
             response_code = response.code
 
             # Construct a response object
-            return_obj = dict()
+            return_obj = {}
             if response_code == 200:
                 return_obj['success'] = True
                 if hasattr(response,'content'):
                     data= json.loads(response.content)
                 else:    
                     data = json.loads(response.read())
-                #print("+++++++++++++++++data ="+json.dumps(data))    
-                if type(data) == dict and 'ID' in data.keys() and 'Message' in data.keys() and data['ID'] == 0 and\
-                        'The Query did not retrieve any records' == data['Message']:
+                #print("+++++++++++++++++data ="+json.dumps(data))
+                if (
+                    type(data) == dict
+                    and 'ID' in data.keys()
+                    and 'Message' in data.keys()
+                    and data['ID'] == 0
+                    and data['Message'] == 'The Query did not retrieve any records'
+                ):
                     data = []
                 return_obj['data'] = data
             else:
                 ErrorResponder.fill_error(return_obj, response, ['message'])
             return return_obj
         except Exception as err:
-            self.logger.error('error when getting search results: {}'.format(err))
+            self.logger.error(f'error when getting search results: {err}')
             raise

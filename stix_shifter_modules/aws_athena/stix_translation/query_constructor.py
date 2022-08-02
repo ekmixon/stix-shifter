@@ -38,8 +38,8 @@ class QueryStringPatternTranslator:
         self.dmm = data_model_mapper
         self._time_range = time_range
         self.service_type = self.dmm.dialect
-        self._protocol_lookup_needed = True if self.service_type in ['vpcflow'] else False
-        self._epoch_time = True if self.service_type in ['vpcflow'] else False
+        self._protocol_lookup_needed = self.service_type in ['vpcflow']
+        self._epoch_time = self.service_type in ['vpcflow']
         self.qualifier_string = ''
         self.translated = self.parse_expression(pattern)
 
@@ -52,7 +52,7 @@ class QueryStringPatternTranslator:
         """
         if not isinstance(values, tuple):
             values = values.element_iterator()
-        return tuple("{}".format(value) for value in values)
+        return tuple(f"{value}" for value in values)
 
     @staticmethod
     def _format_match(value) -> str:
@@ -61,7 +61,7 @@ class QueryStringPatternTranslator:
         :param value: str
         :return: str
         """
-        return '{}'.format(value)
+        return f'{value}'
 
     @staticmethod
     def _format_equality(value) -> str:
@@ -70,7 +70,7 @@ class QueryStringPatternTranslator:
         :param value: str
         :return: str
         """
-        return "{}".format(value)
+        return f"{value}"
 
     @staticmethod
     def _format_like(value) -> str:
@@ -101,7 +101,7 @@ class QueryStringPatternTranslator:
             con_string = re.sub(r'\(', '(NOT ', comparison_string, 1)
             comparison_string = con_string.replace(' OR ', ' OR NOT ')
         else:
-            comparison_string = "NOT " + comparison_string
+            comparison_string = f"NOT {comparison_string}"
         return comparison_string
 
     @staticmethod
@@ -115,11 +115,20 @@ class QueryStringPatternTranslator:
         epoch = datetime(1970, 1, 1)
         for time_pattern in time_patterns:
             try:
-                converted_time = int(((datetime.strptime(timestamp, time_pattern) - epoch).total_seconds()) * 1000)
-                return converted_time
+                return int(
+                    (
+                        (
+                            datetime.strptime(timestamp, time_pattern) - epoch
+                        ).total_seconds()
+                    )
+                    * 1000
+                )
+
             except ValueError:
                 pass
-        raise NotImplementedError("cannot convert the timestamp {} to milliseconds".format(timestamp))
+        raise NotImplementedError(
+            f"cannot convert the timestamp {timestamp} to milliseconds"
+        )
 
     @staticmethod
     def get_time_stamp(timestamp):
@@ -135,7 +144,7 @@ class QueryStringPatternTranslator:
                 return date_time.strftime('%Y-%m-%dT%H:%M:%SZ')
             except ValueError:
                 pass
-        raise NotImplementedError("no valid timestamp {} provided".format(timestamp))
+        raise NotImplementedError(f"no valid timestamp {timestamp} provided")
 
     @staticmethod
     def load_json(rel_path_of_file):
@@ -145,11 +154,10 @@ class QueryStringPatternTranslator:
         :return: dictionary
         """
         _json_path = path.abspath(path.join(path.join(__file__, ".."), rel_path_of_file))
-        if path.exists(_json_path):
-            with open(_json_path) as f_obj:
-                return json.load(f_obj)
-        else:
+        if not path.exists(_json_path):
             raise FileNotFoundError
+        with open(_json_path) as f_obj:
+            return json.load(f_obj)
 
     def _format_datetime(self, value) -> tuple:
         """
@@ -160,10 +168,10 @@ class QueryStringPatternTranslator:
         values = value.values if hasattr(value, 'values') else [value]
         if self._epoch_time:
             milli_secs_lst = list(map(self.get_epoch_time, values))
-            values = tuple(map(lambda x: '{}'.format(str(x)[:-3]), milli_secs_lst))
+            values = tuple(map(lambda x: f'{str(x)[:-3]}', milli_secs_lst))
         else:
             time_stamp_chk = list(map(self.get_time_stamp, values))
-            values = tuple(map(lambda x: '{}'.format(str(x)), time_stamp_chk))
+            values = tuple(map(lambda x: f'{str(x)}', time_stamp_chk))
         return values if len(values) > 1 else values[0]
 
     def _protocol_lookup(self, value):
@@ -174,12 +182,15 @@ class QueryStringPatternTranslator:
         """
         value = value.values if hasattr(value, 'values') else value
         protocol_json = self.load_json(PROTOCOL_LOOKUP_JSON_FILE)
-        if isinstance(value, list):
-            protocol_value = tuple(protocol_json.get(each_value.lower()) for each_value in value if each_value.lower(
-                             ) in protocol_json)
-        else:
-            protocol_value = protocol_json.get(value.lower())
-        return protocol_value
+        return (
+            tuple(
+                protocol_json.get(each_value.lower())
+                for each_value in value
+                if each_value.lower() in protocol_json
+            )
+            if isinstance(value, list)
+            else protocol_json.get(value.lower())
+        )
 
     def _protocol_check(self, expression):
         """
@@ -193,8 +204,9 @@ class QueryStringPatternTranslator:
             value = self._protocol_lookup(expression.value)
             if (not value) or (isinstance(value, tuple) and None in value):
                 raise NotImplementedError(
-                    "Un-supported protocol '{}' for operation '{}' for aws athena '{}' logs".format(
-                        expression.value, expression.comparator, path.basename(self.service_type)))
+                    f"Un-supported protocol '{expression.value}' for operation '{expression.comparator}' for aws athena '{path.basename(self.service_type)}' logs"
+                )
+
             expression.value = value
         else:
             value = expression.value
@@ -214,8 +226,7 @@ class QueryStringPatternTranslator:
         """
         for item in nested_list:
             if isinstance(item, Iterable) and not isinstance(item, str):
-                for x in self._flatten_list(item):
-                    yield x
+                yield from self._flatten_list(item)
             else:
                 yield item
 
@@ -225,20 +236,22 @@ class QueryStringPatternTranslator:
         :param mapped_fields_array: list, attributes in from stix service type json file
         :return: list, mapped fields array with json extract scalar function
         """
-        extract_string_list = list()
+        extract_string_list = []
         extract_string_dict = self.load_json(GUARDDUTY_CONFIG)['guardduty']['extract_fields']
         for value in mapped_fields_array:
             if value in extract_string_dict.keys():
                 # json extract scalar function will be added to each mapped fields
                 extract_queries = extract_string_dict[value]['json_extract_query']
                 if isinstance(extract_queries, list):
-                    extract_string_list.append(["json_extract_scalar({})".format(val) for val in
-                                                extract_queries])
+                    extract_string_list.append(
+                        [f"json_extract_scalar({val})" for val in extract_queries]
+                    )
+
                 else:
-                    extract_string_list.append("json_extract_scalar({})".format(extract_queries))
+                    extract_string_list.append(f"json_extract_scalar({extract_queries})")
             else:
                 extract_string_list.append(value)
-        mapped_fields_array = [val for val in self._flatten_list(extract_string_list)]
+        mapped_fields_array = list(self._flatten_list(extract_string_list))
         return mapped_fields_array
 
     def _parse_time_range(self, qualifier, time_range):
@@ -253,30 +266,37 @@ class QueryStringPatternTranslator:
                 if self._epoch_time:
                     time_range_iterator = map(lambda x: int(self.get_epoch_time(x.group()) / 1000),
                                               compile_timestamp_regex.finditer(qualifier))
-                    time_range_list = [each for each in time_range_iterator]
+                    time_range_list = list(time_range_iterator)
                 else:
                     time_range_iterator = compile_timestamp_regex.finditer(qualifier)
-                    time_range_list = ["'{}'".format(each.group()) for each in time_range_iterator]
-            # Default time range Start time = Now - 5 minutes and Stop time  = Now
+                    time_range_list = [f"'{each.group()}'" for each in time_range_iterator]
+            elif self._epoch_time:
+                stop_time = datetime.now()
+                start_time = int(round((stop_time - timedelta(minutes=time_range)).timestamp()))
+                stop_time = int(round(stop_time.timestamp()))
+                time_range_list = [start_time, stop_time]
             else:
-                if self._epoch_time:
-                    stop_time = datetime.now()
-                    start_time = int(round((stop_time - timedelta(minutes=time_range)).timestamp()))
-                    stop_time = int(round(stop_time.timestamp()))
-                    time_range_list = [start_time, stop_time]
-                else:
-                    stop_time = datetime.utcnow()
-                    go_back_in_minutes = timedelta(minutes=time_range)
-                    start_time = stop_time - go_back_in_minutes
-                    time_range_list = ["'{}'".format(each)for each in
-                                       [start_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z', stop_time.strftime(
-                                           '%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z']]
-            start_stop_list = [each for each in time_range_list]
-            qualifier_string = "AND {datetime_field} BETWEEN {starttime} AND " \
-                               "{stoptime}".format(datetime_field=self.dmm.map_data['startstopattr'],
-                                                   starttime=start_stop_list[0],
-                                                   stoptime=start_stop_list[1])
-            return qualifier_string
+                stop_time = datetime.utcnow()
+                go_back_in_minutes = timedelta(minutes=time_range)
+                start_time = stop_time - go_back_in_minutes
+                time_range_list = [
+                    f"'{each}'"
+                    for each in [
+                        start_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
+                        stop_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
+                    ]
+                ]
+
+            start_stop_list = list(time_range_list)
+            return (
+                "AND {datetime_field} BETWEEN {starttime} AND "
+                "{stoptime}".format(
+                    datetime_field=self.dmm.map_data['startstopattr'],
+                    starttime=start_stop_list[0],
+                    stoptime=start_stop_list[1],
+                )
+            )
+
         except (KeyError, IndexError, TypeError) as e:
             raise e
 
@@ -296,20 +316,27 @@ class QueryStringPatternTranslator:
         digit_chk = False
         alpha_chk = False
         if isinstance(value, tuple):
-            digit_chk = all([True if val.isdigit() else False for val in value])
-            alpha_chk = all([True if val.isalpha() else False for val in value])
+            digit_chk = all(bool(val.isdigit()) for val in value)
+            alpha_chk = all(bool(val.isalpha()) for val in value)
             if alpha_chk:
-                values = tuple(map(lambda x: "lower('{}')".format(x), value))
+                values = tuple(map(lambda x: f"lower('{x}')", value))
                 value = "({value})".format(value=','.join(values))
         for mapped_field in mapped_fields_array:
             if (expression.comparator == ComparisonComparators.In and digit_chk) or \
-                    (expression.comparator in [ComparisonComparators.Equal, ComparisonComparators.NotEqual,
+                        (expression.comparator in [ComparisonComparators.Equal, ComparisonComparators.NotEqual,
                                                ComparisonComparators.Like] and str(value).isdigit()) or (
                     expression.comparator == ComparisonComparators.Like and '%' in str(value) or '_' in str(value)):
-                comparison_string += "CAST({mapped_field} AS varchar) {comparator} " \
-                                     "{value}".format(mapped_field=mapped_field, comparator=comparator,
-                                                      value="'{}'".format(value) if not isinstance(value, tuple)
-                                                      else "('{}')".format(value[0]) if len(value) == 1 else value)
+                comparison_string += (
+                    "CAST({mapped_field} AS varchar) {comparator} "
+                    "{value}".format(
+                        mapped_field=mapped_field,
+                        comparator=comparator,
+                        value=(f"('{value[0]}')" if len(value) == 1 else value)
+                        if isinstance(value, tuple)
+                        else f"'{value}'",
+                    )
+                )
+
             elif expression.comparator == ComparisonComparators.Matches:
                 comparison_string += "{comparator}(CAST({mapped_field} as varchar), '{value}')".format(
                     comparator=comparator, mapped_field=mapped_field, value=value)
@@ -319,9 +346,14 @@ class QueryStringPatternTranslator:
                 comparison_string += "CAST({mapped_field} as REAL) {comparator} {value}".format(
                     mapped_field=mapped_field, comparator=comparator, value=value)
             elif expression.comparator == ComparisonComparators.In:
-                comparison_string += "{mapped_field} {comparator} {value}".format(mapped_field="lower({})".format(
-                    mapped_field) if alpha_chk else mapped_field, comparator=comparator,
-                    value=value if len(value) > 1 else "('{}')".format(value[0]))
+                comparison_string += "{mapped_field} {comparator} {value}".format(
+                    mapped_field=f"lower({mapped_field})"
+                    if alpha_chk
+                    else mapped_field,
+                    comparator=comparator,
+                    value=value if len(value) > 1 else f"('{value[0]}')",
+                )
+
             else:
                 comparison_string += "lower({mapped_field}) {comparator} lower('{value}')".format(
                                       mapped_field=mapped_field, comparator=comparator,
@@ -340,8 +372,10 @@ class QueryStringPatternTranslator:
         :return: operator, SQL operator
         """
         if expression_operator not in self.comparator_lookup:
-            raise NotImplementedError("Comparison operator {} unsupported for AWS Athena connector".format
-                                      (expression_operator.name))
+            raise NotImplementedError(
+                f"Comparison operator {expression_operator.name} unsupported for AWS Athena connector"
+            )
+
         return self.comparator_lookup[expression_operator]
 
     def _parse_expression(self, expression, qualifier=None) -> str:
@@ -355,20 +389,20 @@ class QueryStringPatternTranslator:
             comparison_string = self.__eval_comparison_exp(expression)
             if expression.negated:
                 comparison_string = self._negate_comparison(comparison_string)
-                return "{}".format(comparison_string)
+                return f"{comparison_string}"
             return comparison_string
         elif isinstance(expression, CombinedComparisonExpression):
             operator = self._lookup_comparison_operator(self, expression.operator)
             expression_01 = self._parse_expression(expression.expr1)
             expression_02 = self._parse_expression(expression.expr2)
-            if not expression_01 or not expression_02:
-                query_string = ""
-            else:
-                query_string = "({} {} {})".format(expression_01, operator, expression_02)
-            return query_string
+            return (
+                ""
+                if not expression_01 or not expression_02
+                else f"({expression_01} {operator} {expression_02})"
+            )
+
         elif isinstance(expression, ObservationExpression):
-            select_query = self.__eval_observation_exp(expression, qualifier)
-            return select_query
+            return self.__eval_observation_exp(expression, qualifier)
         elif isinstance(expression, CombinedObservationExpression):
             return self.__eval_comb_observation_exp(expression, qualifier)
         elif isinstance(expression, StartStopQualifier):
@@ -377,8 +411,9 @@ class QueryStringPatternTranslator:
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def __eval_observation_exp(self, expression, qualifier):
         """
@@ -387,13 +422,18 @@ class QueryStringPatternTranslator:
         :param qualifier: qualifier
         :return: str
         """
-        select_query = ''
         self.qualifier_string = self._parse_time_range(qualifier, self._time_range)
-        con_query = self._parse_expression(expression.comparison_expression, qualifier)
-        if con_query:
-            select_query = "{con_query} {qualifier_string}".format(con_query=con_query,
-                                                                   qualifier_string=self.qualifier_string)
-        return select_query
+        return (
+            "{con_query} {qualifier_string}".format(
+                con_query=con_query, qualifier_string=self.qualifier_string
+            )
+            if (
+                con_query := self._parse_expression(
+                    expression.comparison_expression, qualifier
+                )
+            )
+            else ''
+        )
 
     def __eval_comparison_exp(self, expression):
         """
@@ -417,7 +457,7 @@ class QueryStringPatternTranslator:
             expression.value = existing_protocol_value
         if len(mapped_fields_array) > 1:
             # More than one data source field maps to the STIX attribute, so group comparisons together.
-            grouped_comparison_string = "(" + comparison_string + ")"
+            grouped_comparison_string = f"({comparison_string})"
             comparison_string = grouped_comparison_string
         return comparison_string
 
@@ -432,11 +472,11 @@ class QueryStringPatternTranslator:
         expression_01 = self._parse_expression(expression.expr1, qualifier)
         expression_02 = self._parse_expression(expression.expr2, qualifier)
         if expression_01 and expression_02:
-            return "({}) {} ({})".format(expression_01, operator, expression_02)
+            return f"({expression_01}) {operator} ({expression_02})"
         elif expression_01:
-            return "{}".format(expression_01)
+            return f"{expression_01}"
         elif expression_02:
-            return "{}".format(expression_02)
+            return f"{expression_02}"
         else:
             return ''
 
@@ -453,25 +493,23 @@ class QueryStringPatternTranslator:
         if stix_field in ['start', 'end']:
             value = self._format_datetime(expression.value)
             if expression.comparator == ComparisonComparators.In and isinstance(value, str):
-                if self._epoch_time:
-                    value = "({})".format(value)
-                else:
-                    value = "('{}')".format(value)
+                value = f"({value})" if self._epoch_time else f"('{value}')"
         elif expression.comparator == ComparisonComparators.Matches:
             value = self._format_match(expression.value)
-        # should be (x, y, z, ...)
         elif expression.comparator == ComparisonComparators.In:
             value = self._format_set(expression.value)
-        elif expression.comparator == ComparisonComparators.Equal or expression.comparator == ComparisonComparators \
-                .NotEqual:
+        elif expression.comparator in [
+            ComparisonComparators.Equal,
+            ComparisonComparators.NotEqual,
+        ]:
             value = self._format_equality(expression.value)
-        # '%' , '_' wildcards can be used
         elif expression.comparator == ComparisonComparators.Like:
             value = self._format_like(expression.value)
         else:
             value = expression.value
-        comparison_string = self._parse_mapped_fields(expression, value, comparator, mapped_fields_array)
-        return comparison_string
+        return self._parse_mapped_fields(
+            expression, value, comparator, mapped_fields_array
+        )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)

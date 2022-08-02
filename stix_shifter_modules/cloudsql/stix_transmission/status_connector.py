@@ -37,14 +37,13 @@ class StatusConnector(BaseStatusConnector):
         except ValueError as e:
             response = {"message": repr(e)}
         except Exception as e:
-            self.logger.error('error when getting search results: {}'.format(e))
+            self.logger.error(f'error when getting search results: {e}')
             raise
 
         response_json = response
 
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = success
+        return_obj = {'success': success}
         if success:
             return_obj['status'] = self.__getStatus(response_json.get(
                                                     'status', 'failed'))
@@ -52,7 +51,7 @@ class StatusConnector(BaseStatusConnector):
                 # 2018-08-28T15:51:19.899Z
                 # fmt = "%Y-%m-%dT%H:%M:%S.%f%Z"
                 delta = dateutil.parser.parse(response_json.get('end_time')) -\
-                    dateutil.parser.parse(response_json.get('submit_time'))
+                        dateutil.parser.parse(response_json.get('submit_time'))
                 return_obj['progress'] = delta.total_seconds()
             else:
                 return_obj['progress'] = "0"

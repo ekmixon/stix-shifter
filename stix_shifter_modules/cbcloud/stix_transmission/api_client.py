@@ -17,10 +17,12 @@ DEFAULT_FIELDS = [
 class APIClient():
     def __init__(self, connection, configuration):
         auth = configuration.get('auth')
-        headers = dict()
-        headers['X-Auth-Token'] = auth.get('token')
-        headers['Accept'] = 'application/json'
-        headers['Content-Type'] = 'application/json'
+        headers = {
+            'X-Auth-Token': auth.get('token'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+
         self.org_key = auth.get('org_key')
         self.client = RestApiClient(
             connection.get('host'),

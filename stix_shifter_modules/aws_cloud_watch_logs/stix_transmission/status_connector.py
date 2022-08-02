@@ -47,14 +47,13 @@ class StatusConnector(BaseStatusConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         limit = DEFAULT_LIMIT
         try:
             if ':' in search_id:
                 search_id, limit = search_id.split(':')
-            query = dict()
-            query['queryId'] = search_id
+            query = {'queryId': search_id}
             response_dict = self.client.get_query_results(**query)
             return_obj['success'] = True
             return_obj['status'] = self._getstatus(response_dict['status'])

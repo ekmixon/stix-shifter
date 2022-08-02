@@ -17,12 +17,12 @@ class PingConnector(BasePingConnector):
 
     def ping_connection(self):
         response_txt = None
-        return_obj = dict()
+        return_obj = {}
         try:
             response = self.api_client.ping_box()
             response_code = response.code
             response_txt = response.read().decode('utf-8')
-            
+
             if self.ENDPOINT in response_txt and 199 < response_code < 300:
                 return_obj['success'] = True
             elif ErrorResponder.is_plain_string(response_txt):
@@ -30,10 +30,9 @@ class PingConnector(BasePingConnector):
             else:
                 raise UnexpectedResponseException
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
-        
+
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')
         return return_obj

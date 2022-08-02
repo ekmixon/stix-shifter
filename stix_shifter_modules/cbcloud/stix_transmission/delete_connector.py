@@ -15,7 +15,7 @@ class DeleteConnector(BaseDeleteConnector):
         response_code = response.code
         response_text = response.read()
         error = None
-        response_dict = dict()
+        response_dict = {}
 
         try:
             # Successful deletion returns a 204 status code and empty response
@@ -26,9 +26,7 @@ class DeleteConnector(BaseDeleteConnector):
             error = Exception(f'Can not parse response: {ex}')
 
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = False
-
+        return_obj = {'success': False}
         # Successful deletion returns a 204 status code and empty response
         if response_code == 204:
             return_obj['success'] = True

@@ -10,5 +10,4 @@ class AwsToTimestamp(ValueTransformer):
     @staticmethod
     def transform(aws_time):
         time_array = aws_time.split(' ')
-        converted_time = time_array[0] + 'T' + time_array[1] + 'Z'
-        return converted_time
+        return f'{time_array[0]}T{time_array[1]}Z'

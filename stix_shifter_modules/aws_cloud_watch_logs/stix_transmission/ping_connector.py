@@ -12,8 +12,8 @@ class PingConnector(BasePingConnector):
         Ping the endpoint
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             self.client.describe_log_groups(**{})
             return_obj['success'] = True

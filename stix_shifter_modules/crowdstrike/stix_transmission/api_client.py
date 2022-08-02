@@ -16,7 +16,7 @@ class APIClient:
         :param connection: dict, connection dict
         :param configuration: dict,config dict"""
 
-        headers = dict()
+        headers = {}
         url_modifier_function = None
         auth = configuration.get('auth')
         # self.endpoint_start = 'incidents/'
@@ -39,22 +39,21 @@ class APIClient:
         :param filter: filter incidents by certain value
         :param sort: sort incidents according to sort value
         :return: response, json object"""
-        headers = dict()
-        data = dict()
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
-        headers['Authorization'] = f'Bearer {self.get_token()}'
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.get_token()}',
+        }
+
         endpoint = self.INCIDENTS_IDS_ENDPOINT
-        data['filter'] = filter
-        data['limit'] = limit
+        data = {'filter': filter, 'limit': limit}
         if sort:
             data['sort'] = sort
         return self.client.call_api(endpoint, 'GET', headers=headers, urldata=data, timeout=self.timeout)
 
     def ping_box(self):
         # Sends a GET request
-        headers = dict()
-        headers['Authorization'] = f'Bearer {self.get_token()}'
+        headers = {'Authorization': f'Bearer {self.get_token()}'}
         endpoint = 'detects/queries/detects/v1'  # Test if system alive
         return self.client.call_api(endpoint, 'GET', headers=headers, timeout=self.timeout)
 
@@ -62,10 +61,12 @@ class APIClient:
         """get the response from crowdstrike endpoints
         :param ids: Provide one or more incident IDs
         :return: response, json object"""
-        headers = dict()
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
-        headers['Authorization'] = f'Bearer {self.get_token()}'
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {self.get_token()}',
+        }
+
         endpoint = self.INCIDENTS_INFO_ENDPOINT
         ids_expression = json.dumps({'ids': ids}).encode("utf-8")
         return self.client.call_api(endpoint, 'POST', headers=headers, data=ids_expression, timeout=self.timeout)
@@ -98,7 +99,8 @@ class APIClient:
         :return: True if token is expired, False if not expired
         :rtype: bool
         """
-        expired = True
-        if self._token:
-            expired = (datetime.now() - self._token_time) >= timedelta(minutes=30)
-        return expired
+        return (
+            (datetime.now() - self._token_time) >= timedelta(minutes=30)
+            if self._token
+            else True
+        )

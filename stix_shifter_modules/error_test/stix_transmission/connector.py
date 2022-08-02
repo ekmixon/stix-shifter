@@ -37,18 +37,15 @@ class Connector(BaseSyncConnector):
 
         found_bindings = matcher.matched()
 
+        matching_sdos = []
         if found_bindings:
-            matching_sdos = []
             for binding in found_bindings:
                 matches = [match for match in matcher.get_sdos_from_binding(binding) if match not in matching_sdos]
                 matching_sdos.extend(matches)
-        else:
-            matching_sdos = []
-
         return matching_sdos
 
     def ping_connection(self):
-        return_obj = dict()
+        return_obj = {}
 
         response = self.client.call_api(self.bundle_url, 'head', timeout=self.timeout)
         response_txt = response.raise_for_status()
@@ -64,7 +61,7 @@ class Connector(BaseSyncConnector):
 
     def create_results_connection(self, search_id, offset, length):
         observations = []
-        return_obj = dict()
+        return_obj = {}
 
         response = None
         if self.connection['options'].get('error_type') == ERROR_TYPE_TIMEOUT:
@@ -96,24 +93,32 @@ class Connector(BaseSyncConnector):
                         ErrorResponder.fill_error(return_obj,  message='Invalid Objects in STIX Bundle.')
                         return return_obj
 
-                for obj in bundle["objects"]:
-                    if obj["type"] == "observed-data":
-                        observations.append(obj)
+                observations.extend(
+                    obj
+                    for obj in bundle["objects"]
+                    if obj["type"] == "observed-data"
+                )
 
                 # Pattern match
                 try:
                     results = self.match(search_id, observations, False)
 
+                    return_obj['success'] = True
                     if len(results) != 0:
-                        return_obj['success'] = True
                         return_obj['data'] = results[int(offset):int(offset + length)]
                     else:
-                        return_obj['success'] = True
                         return_obj['data'] = []
                 except Exception as ex:
-                    ErrorResponder.fill_error(return_obj,  message='Object matching error: ' + str(ex))
+                    ErrorResponder.fill_error(
+                        return_obj, message=f'Object matching error: {str(ex)}'
+                    )
+
             except Exception as ex:
-                ErrorResponder.fill_error(return_obj,  message='Invalid STIX bundle. Malformed JSON: ' + str(ex))
+                ErrorResponder.fill_error(
+                    return_obj,
+                    message=f'Invalid STIX bundle. Malformed JSON: {str(ex)}',
+                )
+
         return return_obj
 
     def create_query_connection(self, query):
@@ -123,6 +128,4 @@ class Connector(BaseSyncConnector):
         return {"success": True, "status": "COMPLETED", "progress": 100}
 
     def delete_query_connection(self, search_id):
-        return_obj = dict()
-        return_obj['success'] = True
-        return return_obj
+        return {'success': True}

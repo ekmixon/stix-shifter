@@ -13,10 +13,10 @@ def __main__():
         if results.is_valid is not True:
             print_results(results)
             raise Exception()
-        
+
         print('*** STIX Bundle validated!!\n')
     except ValueError as ex:
-        print("*** Malformed JSON in the STIX Bundle: " + str(ex))
+        print(f"*** Malformed JSON in the STIX Bundle: {str(ex)}")
     except Exception as ex:
         print("\n *** Invalid STIX Objects found in the bundle. Please fix the error marked as Red[X]. Warnings marked as yellow [!] can be ingnored but recommended to fix ***\n")
 

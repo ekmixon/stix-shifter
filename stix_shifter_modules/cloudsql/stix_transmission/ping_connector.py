@@ -8,7 +8,7 @@ class PingConnector(BasePingConnector):
     def ping_connection(self):
         jobs_df = self.api_client.get_jobs()
 
-        return_obj = dict()
+        return_obj = {}
 
         if jobs_df is not None:
             return_obj['success'] = True

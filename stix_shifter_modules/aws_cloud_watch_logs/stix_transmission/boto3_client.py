@@ -12,10 +12,7 @@ class BOTO3Client:
         aws_secret_access_key = auth.get('aws_secret_access_key')
         log_group_names = connection.get('log_group_names', {})
         if type(log_group_names) == str:
-            if len(log_group_names):
-                log_group_names = json.loads(log_group_names)
-            else:
-                log_group_names = {}
+            log_group_names = json.loads(log_group_names) if len(log_group_names) else {}
         self.log_group_names = log_group_names
 
         try:

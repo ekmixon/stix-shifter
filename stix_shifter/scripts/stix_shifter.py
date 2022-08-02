@@ -208,7 +208,7 @@ def main():
         module = process_dialects(args_module_dialects, options)[0]
 
         try:
-            importlib.import_module("stix_shifter_modules." + module + ".entry_point")
+            importlib.import_module(f"stix_shifter_modules.{module}.entry_point")
         except Exception as ex:
             log.debug(exception_to_string(ex))
             log.error('Module {} not found'.format(module))
@@ -270,7 +270,7 @@ def main():
 
     elif args.command == EXECUTE:
         # Execute means take the STIX SCO pattern as input, execute query, and return STIX as output
-        
+
         translation = stix_translation.StixTranslation()
         connection_dict = json.loads(args.connection)
         configuration_dict = json.loads(args.configuration)
@@ -325,7 +325,7 @@ def main():
             data = '\n'.join(data_lines)
         if args.stix_validator:
             options['stix_validator'] = args.stix_validator
-        recursion_limit = args.recursion_limit if args.recursion_limit else 1000
+        recursion_limit = args.recursion_limit or 1000
         translation = stix_translation.StixTranslation()
         result = translation.translate(
             args.module, args.translate_type, args.data_source, data, options=options, recursion_limit=recursion_limit)
@@ -390,7 +390,7 @@ def transmit(args):
     elif operation_command == stix_transmission.IS_ASYNC:
         result = transmission.is_async()
     else:
-        raise NotImplementedError("Unknown operation \"{}\"".format(operation_command))
+        raise NotImplementedError(f'Unknown operation \"{operation_command}\"')
     return result
 
 

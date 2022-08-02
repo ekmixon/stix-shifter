@@ -14,20 +14,22 @@ class APIClient():
         # Remove when implementing data source API client.
         host = connection["host"]
         port = connection.get('port', '')
-        headers = dict()
+        headers = {}
         url_modifier_function = None
         # TODO switch on cert_verify
         # cert_verify = connection.get('selfSignedCert', True)
         cert_verify = connection.get(False)
         sni = connection.get('sni', None)
         auth = connection.get('auth', None)
-        url = "https://" + host + ":" + str(port)
-        params = dict()
-        params["client_id"] = connection["client_id"]
-        params["url"] = url
-        params["client_secret"] = connection["client_secret"]
-        params["config_uname"] = configuration["auth"]["username"]
-        params["config_pass"] = configuration["auth"]["password"]
+        url = f"https://{host}:{str(port)}"
+        params = {
+            "client_id": connection["client_id"],
+            "url": url,
+            "client_secret": connection["client_secret"],
+            "config_uname": configuration["auth"]["username"],
+            "config_pass": configuration["auth"]["password"],
+        }
+
         self.client_aux = GuardApiClient(params,
                                          host,
                                          port,
@@ -57,8 +59,8 @@ class APIClient():
         respObj.error_type = ""
         respObj.status_code = 200
         content = '{"search_id": "' + search_id + \
-                  '", "progress":"Completed", "status":"COMPLETED", "data": {"message":"Completed for the search id ' \
-                  'provided."}} '
+                      '", "progress":"Completed", "status":"COMPLETED", "data": {"message":"Completed for the search id ' \
+                      'provided."}} '
         respObj._content = bytes(content, 'utf-8')
         return ResponseWrapper(respObj)
 
@@ -81,8 +83,8 @@ class APIClient():
                 respObj.error_type = ""
                 respObj.status_code = 200
                 content = '{"search_id": "' + \
-                          str(response) + \
-                          '", "data": {"message":  "Search id generated."}}'
+                              str(response) + \
+                              '", "data": {"message":  "Search id generated."}}'
                 respObj._content = bytes(content, 'utf-8')
             else:
                 respObj.code = "404"
@@ -106,13 +108,12 @@ class APIClient():
                           "Could not generate search id because 'query' or 'authorization token' or 'credential info' "
                           "is not available.")
 
-        else:
-            id_str = '{"query": ' + json.dumps(
-                self.query) + ', "target" : "' + self.client_aux.url + '", "user":"' + self.client_aux.user + '"}'
-            # print(id_str)
-            id_byt = id_str.encode('utf-8')
-            s_id = base64.b64encode(id_byt).decode()
-            self.search_id = s_id
+        id_str = '{"query": ' + json.dumps(
+            self.query) + ', "target" : "' + self.client_aux.url + '", "user":"' + self.client_aux.user + '"}'
+        # print(id_str)
+        id_byt = id_str.encode('utf-8')
+        s_id = base64.b64encode(id_byt).decode()
+        self.search_id = s_id
 
         # print(s_id)
         return s_id
@@ -121,44 +122,43 @@ class APIClient():
         # Sends a GET request from guardium
         # This function calls Guardium to get data
 
-        if self.client_aux.access_token:
-            self.search_id = search_id
-            self.decode_searchId()
-            indx = int(index_from) + 1
-            fsize = int(fetch_size) + 1
-            if "reportName" in self.query:
-                response = self.client_aux.handle_report(self.query, indx, fsize)
-            if "category" in self.query:
-                # print("TADA")
-                response = self.client_aux.handle_qs(self.query, indx, fsize)
-            status_code = response.code
-            # Though the connector gets the authorization token just before fetching the actual result there is a
-            # possibility that the token returned is only valid for a second and response_code = 401 is returned.
-            # Catch that situation (though remote) and process again.
-            if status_code != 200:
-                error_msg = json.loads(str(response.read(), 'utf-8'))
-                error_code = error_msg.get('error', None)
-                if status_code == 401 and error_code == "invalid_token":
-                    self.authorization = None
-                    if self.client_aux.get_token():
-                        response = self.client_aux.handle_report(self.query, indx, fetch_size)
-                        status_code = response.response.status_code
-                    else:
-                        raise ValueError(3002, "Authorization Token not received ")
-
-            # Now START and STOP are optional -- A situation can occur that data set can be empty -- handle this
-            # situation here
-            if status_code == 200:
-                #
-                # Determine if the response is empty if empty Guardium sends {"ID": 0,
-                # "Message": "ID=0 The Query did not retrieve any records"}
-                # Raise an error -->  1010: ErrorCode.TRANSMISSION_RESPONSE_EMPTY_RESULT
-                # response_content = self.raiseErrorIfEmptyResult(response)
-                return response
-            else:
-                raise ValueError(1020, "Error -- Status Code is NOT 200!")
-        else:
+        if not self.client_aux.access_token:
             raise ValueError(3002, "Authorization Token not received ")
+        self.search_id = search_id
+        self.decode_searchId()
+        indx = int(index_from) + 1
+        fsize = int(fetch_size) + 1
+        if "reportName" in self.query:
+            response = self.client_aux.handle_report(self.query, indx, fsize)
+        if "category" in self.query:
+            # print("TADA")
+            response = self.client_aux.handle_qs(self.query, indx, fsize)
+        status_code = response.code
+        # Though the connector gets the authorization token just before fetching the actual result there is a
+        # possibility that the token returned is only valid for a second and response_code = 401 is returned.
+        # Catch that situation (though remote) and process again.
+        if status_code != 200:
+            error_msg = json.loads(str(response.read(), 'utf-8'))
+            error_code = error_msg.get('error', None)
+            if status_code == 401 and error_code == "invalid_token":
+                self.authorization = None
+                if self.client_aux.get_token():
+                    response = self.client_aux.handle_report(self.query, indx, fetch_size)
+                    status_code = response.response.status_code
+                else:
+                    raise ValueError(3002, "Authorization Token not received ")
+
+        # Now START and STOP are optional -- A situation can occur that data set can be empty -- handle this
+        # situation here
+        if status_code == 200:
+            #
+            # Determine if the response is empty if empty Guardium sends {"ID": 0,
+            # "Message": "ID=0 The Query did not retrieve any records"}
+            # Raise an error -->  1010: ErrorCode.TRANSMISSION_RESPONSE_EMPTY_RESULT
+            # response_content = self.raiseErrorIfEmptyResult(response)
+            return response
+        else:
+            raise ValueError(1020, "Error -- Status Code is NOT 200!")
 
     def decode_searchId(self):
         # These value (self.credential, self.query) must be present.  self.authorization may not.
@@ -166,8 +166,7 @@ class APIClient():
             id_dec64 = base64.b64decode(self.search_id)
             jObj = json.loads(id_dec64.decode('utf-8'))
         except:
-            raise IOError(
-                3001, "Could not decode search id content - " + self.search_id)
+            raise IOError(3001, f"Could not decode search id content - {self.search_id}")
 
         self.query = json.loads(jObj.get("query", None))
         self.credential = jObj.get("credential", None)

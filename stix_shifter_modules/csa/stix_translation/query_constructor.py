@@ -58,35 +58,29 @@ class SqlQueryStringPatternTranslator:
         date1 = m.group(1)
         date1 = re.sub("t", "", date1)
         # return " {} {} {} {} ".format(self.comparator_lookup[ComparisonExpressionOperators.And], START_STOP_FIELD, self.comparator_lookup[ComparisonExpressionOperators.GreaterThanOrEqual, date1)
-        return " {} {} {} {} ".format("AND", START_STOP_FIELD, ">=", date1)
+        return f" AND {START_STOP_FIELD} >= {date1} "
 
     @staticmethod
     def stopreplace(m):
         date1 = m.group(1)
         date1 = re.sub("t", "", date1)
-        return " {} {} {} {} ".format("AND", START_STOP_FIELD, "<=", date1)
+        return f" AND {START_STOP_FIELD} <= {date1} "
 
     @staticmethod
     def _format_set(values) -> str:
         gen = values.element_iterator()
-        return "({})".format(' OR '.join([SqlQueryStringPatternTranslator._escape_value(value) for value in gen]))
+        return f"({' OR '.join([SqlQueryStringPatternTranslator._escape_value(value) for value in gen])})"
 
     @staticmethod
     def _format_match(value) -> str:
         raw = SqlQueryStringPatternTranslator._escape_value(value)
-        if raw[0] == "^":
-            raw = raw[1:]
-        else:
-            raw = ".*" + raw
-        if raw[-1] == "$":
-            raw = raw[0:-1]
-        else:
-            raw = raw + ".*"
-        return "\'{}\'".format(raw)
+        raw = raw[1:] if raw[0] == "^" else f".*{raw}"
+        raw = raw[:-1] if raw[-1] == "$" else f"{raw}.*"
+        return f"\'{raw}\'"
 
     @staticmethod
     def _format_equality(value) -> str:
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _format_like(value) -> str:
@@ -103,7 +97,7 @@ class SqlQueryStringPatternTranslator:
 
     @staticmethod
     def _negate_comparison(comparison_string):
-        return "NOT({})".format(comparison_string)
+        return f"NOT({comparison_string})"
 
     def _parse_expression(self, expression, qualifier=None) -> str:
         if isinstance(expression, ComparisonExpression):  # Base Case
@@ -119,9 +113,8 @@ class SqlQueryStringPatternTranslator:
                 try:
                     expression.value = self.mapping_network_protocol[expression.value.lower()]
                 except Exception as protocol_key:
-                    raise KeyError(
-                        "Network protocol {} is not supported.".format(protocol_key))
-            elif stix_field == 'start' or stix_field == 'end':
+                    raise KeyError(f"Network protocol {protocol_key} is not supported.")
+            elif stix_field in ['start', 'end']:
                 transformer = TimestampToMilliseconds()
                 # TODO Skydive uses seconds for timestamps, but this is something we should configure
                 expression.value = int(transformer.transform(expression.value) / 1000)
@@ -129,13 +122,14 @@ class SqlQueryStringPatternTranslator:
             # Some values are formatted differently based on how they're being compared
             if expression.comparator == ComparisonComparators.Matches:  # needs forward slashes
                 value = self._format_match(expression.value)
-            # should be (x, y, z, ...)
             elif expression.comparator == ComparisonComparators.In:
                 value = self._format_set(expression.value)
-            elif expression.comparator == ComparisonComparators.Equal or expression.comparator == ComparisonComparators.NotEqual:
+            elif expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+            ]:
                 # Should be in single-quotes
                 value = self._format_equality(expression.value)
-            # '%' -> '*' wildcard, '_' -> '?' single wildcard
             elif expression.comparator == ComparisonComparators.Like:
                 value = self._format_like(expression.value)
             else:
@@ -152,9 +146,9 @@ class SqlQueryStringPatternTranslator:
                     comparison_string += " OR "
                     mapped_fields_count -= 1
 
-            if(len(mapped_fields_array) > 1):
+            if (len(mapped_fields_array) > 1):
                 # More than one SQL field maps to the STIX attribute so group the ORs.
-                grouped_comparison_string = "(" + comparison_string + ")"
+                grouped_comparison_string = f"({comparison_string})"
                 comparison_string = grouped_comparison_string
 
             if expression.comparator == ComparisonComparators.NotEqual:
@@ -168,9 +162,8 @@ class SqlQueryStringPatternTranslator:
                 return "{comparison}".format(comparison=comparison_string)
 
         elif isinstance(expression, CombinedComparisonExpression):
-            query_string = "{} {} {}".format(self._parse_expression(expression.expr1),
-                                             self.comparator_lookup[expression.operator],
-                                             self._parse_expression(expression.expr2))
+            query_string = f"{self._parse_expression(expression.expr1)} {self.comparator_lookup[expression.operator]} {self._parse_expression(expression.expr2)}"
+
             if qualifier is not None:
                 return "{query_string} {qualifier} split".format(query_string=query_string, qualifier=qualifier)
             else:
@@ -178,14 +171,15 @@ class SqlQueryStringPatternTranslator:
         elif isinstance(expression, ObservationExpression):
             return self._parse_expression(expression.comparison_expression, qualifier)
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
-            if isinstance(expression.observation_expression, CombinedObservationExpression):
-                operator = self.comparator_lookup[expression.observation_expression.operator]
-                # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
-                return "{expr1} {operator} {expr2}".format(expr1=self._parse_expression(expression.observation_expression.expr1),
-                                                           operator=operator,
-                                                           expr2=self._parse_expression(expression.observation_expression.expr2, expression.qualifier))
-            else:
+            if not isinstance(
+                expression.observation_expression, CombinedObservationExpression
+            ):
                 return self._parse_expression(expression.observation_expression.comparison_expression, expression.qualifier)
+            operator = self.comparator_lookup[expression.observation_expression.operator]
+            # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
+            return "{expr1} {operator} {expr2}".format(expr1=self._parse_expression(expression.observation_expression.expr1),
+                                                       operator=operator,
+                                                       expr2=self._parse_expression(expression.observation_expression.expr2, expression.qualifier))
         elif isinstance(expression, CombinedObservationExpression):
             operator = self.comparator_lookup[expression.operator]
             return "{expr1} {operator} {expr2}".format(expr1=self._parse_expression(expression.expr1),
@@ -194,8 +188,9 @@ class SqlQueryStringPatternTranslator:
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -204,9 +199,13 @@ class SqlQueryStringPatternTranslator:
 def translate_pattern(pattern: Pattern, data_model_mapping, number_rows=1000):
     x = SqlQueryStringPatternTranslator(pattern, data_model_mapping)
     select_statement = x.dmm.map_selections()
-    queries = []
-    bucket = x.dmm.dialect+"-hourly-dumps"
-    for query in x.queries:
-        queries.append('SELECT {select_statement} FROM cos://us-geo/{bucket} STORED AS JSON WHERE {where_clause} PARTITIONED EVERY {number_rows} ROWS'
-                       .format(select_statement=select_statement, bucket=bucket, where_clause=query, number_rows=number_rows))
-    return queries
+    bucket = f"{x.dmm.dialect}-hourly-dumps"
+    return [
+        'SELECT {select_statement} FROM cos://us-geo/{bucket} STORED AS JSON WHERE {where_clause} PARTITIONED EVERY {number_rows} ROWS'.format(
+            select_statement=select_statement,
+            bucket=bucket,
+            where_clause=query,
+            number_rows=number_rows,
+        )
+        for query in x.queries
+    ]

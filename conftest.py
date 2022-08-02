@@ -11,8 +11,7 @@ def build_ignores(start_path_str, skip=False):
         for subitem in start_path.iterdir():
             if not subitem.name.startswith('__'):
                 build_ignores(str(subitem), skip or subitem.joinpath('SKIP.ME').is_file())
-    else:
-        if skip and TEST_FILE_PATTERN.match(start_path.name):
-            collect_ignore.append(start_path_str)
+    elif skip and TEST_FILE_PATTERN.match(start_path.name):
+        collect_ignore.append(start_path_str)
 
 build_ignores(TEST_BASE_DIR)

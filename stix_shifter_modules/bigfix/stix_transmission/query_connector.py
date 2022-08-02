@@ -20,17 +20,15 @@ class QueryConnector(BaseQueryConnector):
 
     def create_query_connection(self, query):
         response_txt = None
-        return_obj = dict()
+        return_obj = {}
         try:
             response = self.api_client.create_search(query)
             response_code = response.code
             response_txt = response.read().decode('utf-8')
             search_id = self.DEFAULT_ID
-            search = re.search(self.PATTERN, response_txt, re.IGNORECASE)
+            if search := re.search(self.PATTERN, response_txt, re.IGNORECASE):
+                search_id = search[1]
 
-            if search:
-                search_id = search.group(1)
-            
             return_obj['search_id'] = search_id
             if 199 < response_code < 300 and search_id != self.DEFAULT_ID:
                 return_obj['success'] = True
@@ -42,9 +40,8 @@ class QueryConnector(BaseQueryConnector):
             else:
                 raise UnexpectedResponseException
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')
         return return_obj

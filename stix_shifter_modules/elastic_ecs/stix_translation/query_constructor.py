@@ -45,18 +45,18 @@ class QueryStringPatternTranslator:
     @staticmethod
     def _format_set(values) -> str:
         gen = values.element_iterator()
-        return "({})".format(' OR '.join(['"{}"'.format(value) for value in gen]))
+        return "({})".format(' OR '.join([f'"{value}"' for value in gen]))
 
     @staticmethod
     def _format_equality(value) -> str:
         value_escaped = QueryStringPatternTranslator._escape_value(value)
-        return '"{}"'.format(value_escaped)
+        return f'"{value_escaped}"'
 
     @staticmethod
     def _format_like(value) -> str:
         # Replacing value with % to * and _ to ? for to support Like comparator
         if isinstance(value, str):
-            return '{}'.format(value.replace('%', '*').replace('_', '?'))
+            return f"{value.replace('%', '*').replace('_', '?')}"
         else:
             return value
 
@@ -69,7 +69,7 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _negate_comparison(comparison_string):
-        return "(NOT ({}))".format(comparison_string)
+        return f"(NOT ({comparison_string}))"
 
     @staticmethod
     def _parse_mapped_fields(self, expression, value, comparator, stix_field, mapped_fields_array):
@@ -77,14 +77,18 @@ class QueryStringPatternTranslator:
         mapped_fields_count = len(mapped_fields_array)
 
         for mapped_field in mapped_fields_array:
-            if expression.comparator == ComparisonComparators.NotEqual or \
-                    expression.comparator == ComparisonComparators.IsSuperSet:
+            if expression.comparator in [
+                ComparisonComparators.NotEqual,
+                ComparisonComparators.IsSuperSet,
+            ]:
                 comparator = ':'
                 comparison_string += "(NOT {mapped_field} {comparator} {value} AND {mapped_field}:*)".format(mapped_field=mapped_field, comparator=comparator, value=value)
-            elif expression.comparator == ComparisonComparators.GreaterThan or \
-                    expression.comparator == ComparisonComparators.LessThan or \
-                    expression.comparator == ComparisonComparators.GreaterThanOrEqual or \
-                    expression.comparator == ComparisonComparators.LessThanOrEqual:
+            elif expression.comparator in [
+                ComparisonComparators.GreaterThan,
+                ComparisonComparators.LessThan,
+                ComparisonComparators.GreaterThanOrEqual,
+                ComparisonComparators.LessThanOrEqual,
+            ]:
                 # Check whether value is in datetime format, Ex: process.created
                 pattern = "^\d{4}(-\d{2}){2}T\d{2}(:\d{2}){2}(\.\d+)?Z$"
                 try:
@@ -121,42 +125,38 @@ class QueryStringPatternTranslator:
             # Resolve the comparison symbol to use in the query string (usually just ':')
             comparator = self.comparator_lookup[expression.comparator]
 
-            if stix_field == 'start' or stix_field == 'end':
+            if stix_field in ['start', 'end']:
                 transformer = TimestampToMilliseconds()
                 expression.value = transformer.transform(expression.value)
 
-            # Some values are formatted differently based on how they're being compared
-            # if expression.comparator == ComparisonComparators.Matches:  # needs forward slashes
-            #    value = self._format_match(expression.value)
-            # should be (x, y, z, ...)
             elif expression.comparator == ComparisonComparators.In:
                 value = self._format_set(expression.value)
-            elif expression.comparator == ComparisonComparators.Equal or \
-                    expression.comparator == ComparisonComparators.NotEqual or \
-                    expression.comparator == ComparisonComparators.IsSubSet or \
-                    expression.comparator == ComparisonComparators.IsSuperSet:
+            elif expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+                ComparisonComparators.IsSubSet,
+                ComparisonComparators.IsSuperSet,
+            ]:
                 value = self._format_equality(expression.value)
-            # '%' -> '*' wildcard, '_' -> '?' single wildcard
             elif expression.comparator == ComparisonComparators.Like:
                 value = self._format_like(expression.value)
             else:
                 value = self._escape_value(expression.value)
 
             comparison_string = self._parse_mapped_fields(self, expression, value, comparator, stix_field, mapped_fields_array)
-            if(len(mapped_fields_array) > 1):
+            if (len(mapped_fields_array) > 1):
                 # More than one data source field maps to the STIX attribute, so group comparisons together.
-                grouped_comparison_string = "(" + comparison_string + ")"
+                grouped_comparison_string = f"({comparison_string})"
                 comparison_string = grouped_comparison_string
 
             if expression.negated:
                 comparison_string = self._negate_comparison(comparison_string)
 
-            if qualifier is not None:
-                self.qualified_queries.append("{} {}".format(comparison_string, qualifier))
-                return ''
-            else:
-                return "{}".format(comparison_string)
+            if qualifier is None:
+                return f"{comparison_string}"
 
+            self.qualified_queries.append(f"{comparison_string} {qualifier}")
+            return ''
         elif isinstance(expression, CombinedComparisonExpression):
             operator = self.comparator_lookup[expression.operator]
             expression_01 = self._parse_expression(expression.expr1)
@@ -164,45 +164,46 @@ class QueryStringPatternTranslator:
             if not expression_01 or not expression_02:
                 return ''
             if isinstance(expression.expr1, CombinedComparisonExpression):
-                expression_01 = "({})".format(expression_01)
+                expression_01 = f"({expression_01})"
             if isinstance(expression.expr2, CombinedComparisonExpression):
-                expression_02 = "({})".format(expression_02)
-            query_string = "({} {} {})".format(expression_01, operator, expression_02)
-            if qualifier is not None:
-                self.qualified_queries.append("{} {}".format(query_string, qualifier))
-                return ''
-            else:
-                return "{}".format(query_string)
+                expression_02 = f"({expression_02})"
+            query_string = f"({expression_01} {operator} {expression_02})"
+            if qualifier is None:
+                return f"{query_string}"
+            self.qualified_queries.append(f"{query_string} {qualifier}")
+            return ''
         elif isinstance(expression, ObservationExpression):
             return self._parse_expression(expression.comparison_expression, qualifier)
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
-            if isinstance(expression.observation_expression, CombinedObservationExpression):
-                operator = self.comparator_lookup[expression.observation_expression.operator]
-                # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
-                expression_01 = self._parse_expression(expression.observation_expression.expr1)
-                expression_02 = self._parse_expression(expression.observation_expression.expr2, expression.qualifier)
-
-                if expression_01:
-                    return "{expr1}".format(expr1=expression_01)
-            else:
+            if not isinstance(
+                expression.observation_expression, CombinedObservationExpression
+            ):
                 return self._parse_expression(expression.observation_expression.comparison_expression, expression.qualifier)
+            operator = self.comparator_lookup[expression.observation_expression.operator]
+            # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
+            expression_01 = self._parse_expression(expression.observation_expression.expr1)
+            expression_02 = self._parse_expression(expression.observation_expression.expr2, expression.qualifier)
+
+            if expression_01:
+                return "{expr1}".format(expr1=expression_01)
         elif isinstance(expression, CombinedObservationExpression):
             operator = self.comparator_lookup[expression.operator]
             expression_01 = self._parse_expression(expression.expr1)
             expression_02 = self._parse_expression(expression.expr2)
             if expression_01 and expression_02:
-                return "({}) {} ({})".format(expression_01, operator, expression_02)
+                return f"({expression_01}) {operator} ({expression_02})"
             elif expression_01:
-                return "{}".format(expression_01)
+                return f"{expression_01}"
             elif expression_02:
-                return "{}".format(expression_02)
+                return f"{expression_02}"
             else:
                 return ''
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -217,23 +218,23 @@ def _get_timestamp(mapped_field, comparator, value):
     converted_epoch_seconds = int((datetime.datetime.strptime(value, time_pattern) - epoch).total_seconds())
 
     if converted_epoch_seconds and comparator == ':>':
-        converted_epoch_seconds = converted_epoch_seconds + 1
+        converted_epoch_seconds += 1
         # convert epoch seconds to UTC Timestamp format
         value_in_timestamp = EpochSecondsToTimestamp.transform(converted_epoch_seconds)
         # Form RANGE Query [UTC TIMESTAMP TO *]
-        converted_value = ':["{}" TO *]'.format(value_in_timestamp)
+        converted_value = f':["{value_in_timestamp}" TO *]'
     elif converted_epoch_seconds and comparator == ':<':
-        converted_epoch_seconds = converted_epoch_seconds - 1
+        converted_epoch_seconds -= 1
         # convert epoch seconds to UTC Timestamp format
         value_in_timestamp = EpochSecondsToTimestamp.transform(converted_epoch_seconds)
         # Form RANGE Query [* TO UTC TIMESTAMP]
-        converted_value = ':[* TO "{}"]'.format(value_in_timestamp)
+        converted_value = f':[* TO "{value_in_timestamp}"]'
     elif comparator == ':<=':
         # Form RANGE Query [* TO UTC TIMESTAMP]
-        converted_value = ':[* TO "{}"]'.format(value)
+        converted_value = f':[* TO "{value}"]'
     elif comparator == ':>=':
         # Form RANGE Query [UTC TIMESTAMP TO *]
-        converted_value = ':["{}" TO *]'.format(value)
+        converted_value = f':["{value}" TO *]'
 
     if converted_value:
         return "({mapped_field}{value})".format(mapped_field=mapped_field,
@@ -311,10 +312,8 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options):
     queries = []
     translated_queries = translated_query_strings.qualified_queries
     for query_string in translated_queries:
-        has_start_stop = _test_timerange_format(query_string)
-
-        if(has_start_stop):
-            queries.append("{}".format(query_string))
+        if has_start_stop := _test_timerange_format(query_string):
+            queries.append(f"{query_string}")
         else:
             # Set times based on default time_range or what is in the options
             stop_time = datetime.datetime.utcnow()
@@ -326,6 +325,6 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options):
             converted_stoptime = stop_time.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
             time_range_str = 'AND (@timestamp:["' + str(converted_starttime) + '" TO "' + str(
                 converted_stoptime) + '"])'
-            queries.append("{} {}".format(query_string, time_range_str))
+            queries.append(f"{query_string} {time_range_str}")
 
     return queries

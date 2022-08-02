@@ -55,13 +55,13 @@ class StatusConnector(BaseStatusConnector):
         """
         reporting_agents = int(response_dict.get('reportingAgents', '0'))
         return_obj = self._get_progress_status(client_count, reporting_agents, return_obj)
-        if client_count <= reporting_agents:
+        if (
+            client_count > reporting_agents
+            and return_obj['progress'] > PROGRESS_THRESHOLD
+            or client_count <= reporting_agents
+        ):
             return_obj['status'] = Status.COMPLETED.value
             return_obj['progress'] = 100
-        else:
-            if return_obj['progress'] > PROGRESS_THRESHOLD:
-                return_obj['status'] = Status.COMPLETED.value
-                return_obj['progress'] = 100
         return return_obj
 
     def status_api_response(self, search_id, client_count):
@@ -72,7 +72,7 @@ class StatusConnector(BaseStatusConnector):
         :param client_count: int
         :return: dict
         """
-        return_obj = dict()
+        return_obj = {}
         try:
             response = self.api_client.get_search_results(search_id, '0', '1')
             response_code = response.code
@@ -88,18 +88,16 @@ class StatusConnector(BaseStatusConnector):
                     response_dict = xmltodict.parse(response_txt)
                     ErrorResponder.fill_error(return_obj, response_dict, ['BESAPI', 'ClientQueryResults',
                                                                           'QueryResult', '+IsFailure=1', '~Result'])
+            elif ErrorResponder.is_plain_string(response_txt):
+                ErrorResponder.fill_error(return_obj, message=response_txt)
             else:
-                if ErrorResponder.is_plain_string(response_txt):
-                    ErrorResponder.fill_error(return_obj, message=response_txt)
-                else:
-                    raise UnexpectedResponseException
+                raise UnexpectedResponseException
         except Exception as e:
-            if e.__class__.__name__ in ['ConnectionError', 'ProxyError']:
-                ErrorResponder.fill_error(return_obj, message='API call disconnected/interrupted')
-                return_obj['status'] = Status.ERROR.value
-            else:
+            if e.__class__.__name__ not in ['ConnectionError', 'ProxyError']:
                 raise e
 
+            ErrorResponder.fill_error(return_obj, message='API call disconnected/interrupted')
+            return_obj['status'] = Status.ERROR.value
         return return_obj
 
     def create_status_connection(self, search_id):
@@ -109,14 +107,13 @@ class StatusConnector(BaseStatusConnector):
         :return: dict
         """
         response_txt = None
-        return_obj = dict()
+        return_obj = {}
         try:
             response = self.api_client.get_sync_query_results(self.RELEVANCE)
             response_txt = response.read().decode('utf-8')
             client_count = self.DEFAULT_CLIENT_COUNT
-            search = re.search(self.PATTERN, response_txt, re.IGNORECASE)
-            if search:
-                client_count = search.group(1)
+            if search := re.search(self.PATTERN, response_txt, re.IGNORECASE):
+                client_count = search[1]
             client_count = int(client_count)
             return_obj = self.status_api_response(search_id, client_count)
         except Exception as e:
@@ -125,7 +122,7 @@ class StatusConnector(BaseStatusConnector):
                 return_obj['status'] = Status.ERROR.value
             elif response_txt is not None:
                 ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
+                self.logger.error(f'can not parse response: {str(response_txt)}')
             else:
                 raise e
         return return_obj

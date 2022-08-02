@@ -14,7 +14,7 @@ class EpochToGuardium(ValueTransformer):
         try:
             return (datetime.fromtimestamp(int(epoch) / 1000, timezone.utc).strftime('%Y-%m-%d %H:%M:%S'))
         except ValueError:
-            LOGGER.error("Cannot convert epoch value {} to timestamp".format(epoch))
+            LOGGER.error(f"Cannot convert epoch value {epoch} to timestamp")
 
 
 class GuardiumToTimestamp(ValueTransformer):
@@ -24,7 +24,7 @@ class GuardiumToTimestamp(ValueTransformer):
     def transform(gdmTime):
         rgx = r"(\d\d\d\d-\d\d-\d\d)\s(\d\d:\d\d:\d\d)"
         mtch = (re.findall(rgx, gdmTime))[0]
-        return (mtch[0] + 'T' + mtch[1]) + '.000Z'
+        return f'{mtch[0]}T{mtch[1]}.000Z'
 
 
 class TimestampToGuardium(ValueTransformer):
@@ -34,7 +34,7 @@ class TimestampToGuardium(ValueTransformer):
     def transform(timestamp):
         rgx = r"(\d\d\d\d-\d\d-\d\d).(\d\d:\d\d:\d\d)"
         mtch = (re.findall(rgx, timestamp))[0]
-        return (mtch[0] + ' ' + mtch[1])
+        return f'{mtch[0]} {mtch[1]}'
 
 
 class GuardiumQS(ValueTransformer):

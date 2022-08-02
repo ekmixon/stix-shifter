@@ -31,8 +31,8 @@ class ResultsConnector(BaseResultsConnector):
         :param length: str, length value
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             offset = int(offset)
             length = int(length)
@@ -53,7 +53,7 @@ class ResultsConnector(BaseResultsConnector):
             schema_row_values = result_response_list[1:]
             result_list = []
             for row in schema_row_values:
-                row_values = [list('-') if list(x.values()) == [] else list(x.values()) for x in row['Data']]
+                row_values = [list(x.values()) or list('-') for x in row['Data']]
                 row_value_list = [row_value for sublist in row_values for row_value in sublist]
                 response_dict = dict(zip(schema_columns_list, row_value_list))
                 result_list.append(response_dict)
@@ -70,16 +70,15 @@ class ResultsConnector(BaseResultsConnector):
             s3_output_bucket_with_file = s3_output_location.split('//')[1]
             s3_output_bucket = s3_output_bucket_with_file.split('/')[0]
             s3_output_key = '/'.join(s3_output_bucket_with_file.split('/')[1:])
-            s3_output_key_metadata = s3_output_key + '.metadata'
-            delete = dict()
-            delete['Objects'] = [{'Key': s3_output_key}, {'Key': s3_output_key_metadata}]
+            s3_output_key_metadata = f'{s3_output_key}.metadata'
+            delete = {'Objects': [{'Key': s3_output_key}, {'Key': s3_output_key_metadata}]}
             # Api call to delete s3 object
             delete_object = self.s3_client.delete_objects(Bucket=s3_output_bucket, Delete=delete)
             if delete_object.get('Errors'):
                 message = delete_object.get('Errors')[0].get('Message')
                 raise AccessDeniedException(message)
         except Exception as ex:
-            return_obj = dict()
+            return_obj = {}
             response_dict['__type'] = ex.__class__.__name__
             response_dict['message'] = ex
             ErrorResponder.fill_error(return_obj, response_dict, ['message'])
@@ -105,18 +104,23 @@ class ResultsConnector(BaseResultsConnector):
             if service_type == 'vpcflow':
                 flatten_obj.update({'name': 'VPC flow log'})
                 temp = flatten_obj.get("action")
-                flatten_obj["action"] = "network-traffic-" + temp.lower()
+                flatten_obj["action"] = f"network-traffic-{temp.lower()}"
             if 'id' in flatten_obj:
                 flatten_obj['finding_id'] = flatten_obj.pop('id')
             # Formatting to differentiate common key available in different action types for to STIX mapping
-            if private_ip_address_key in flatten_obj and flatten_obj[action_type_key] == 'PORT_PROBE':
-                flatten_obj['portprobe#'+private_ip_address_key] = flatten_obj.pop(private_ip_address_key)
-            elif private_ip_address_key in flatten_obj and flatten_obj[action_type_key] == 'DNS_REQUEST':
-                flatten_obj['dnsrequest#'+private_ip_address_key] = flatten_obj.pop(private_ip_address_key)
+            if private_ip_address_key in flatten_obj:
+                if flatten_obj[action_type_key] == 'PORT_PROBE':
+                    flatten_obj[
+                        f'portprobe#{private_ip_address_key}'
+                    ] = flatten_obj.pop(private_ip_address_key)
+
+                elif flatten_obj[action_type_key] == 'DNS_REQUEST':
+                    flatten_obj[
+                        f'dnsrequest#{private_ip_address_key}'
+                    ] = flatten_obj.pop(private_ip_address_key)
+
             flatten_results.append(flatten_obj)
-        # Remove null values and empty objects from response
-        flatten_result_cleansed = self.format_flatten_result(flatten_results)
-        return flatten_result_cleansed
+        return self.format_flatten_result(flatten_results)
 
     def format_flatten_result(self, flatten_results):
         """
@@ -125,7 +129,7 @@ class ResultsConnector(BaseResultsConnector):
         :return: list, results with empty values removed
         """
         flatten_result_cleansed = []
-        cleansed_obj = dict()
+        cleansed_obj = {}
         purge_list = [[], {}, (), '', 'null', True, False, '-', None, 'Unknown']
         for obj in flatten_results:
             for key, value in obj.items():
@@ -135,7 +139,7 @@ class ResultsConnector(BaseResultsConnector):
                         cleansed_obj[key] = self.get_protocol(value)
             cleansed_obj_copy = cleansed_obj.copy()
             flatten_result_cleansed.append(cleansed_obj_copy)
-            cleansed_obj = dict()
+            cleansed_obj = {}
         return flatten_result_cleansed
 
     def format_result(self, flatten_result_cleansed, service_type):
@@ -154,17 +158,16 @@ class ResultsConnector(BaseResultsConnector):
         map_data_keys = list(map_data[service_type].keys())
         ds_key_values = self.gen_dict_extract(key_to_search='ds_key', var=map_data)
         map_data_keys.extend(ds_key_values)
-        flattened_obj = dict()
-        obj_to_unflatten = dict()
-        singular_obj = dict()
-        service_log_dict = dict()
+        flattened_obj = {}
+        obj_to_unflatten = {}
+        singular_obj = {}
+        service_log_dict = {}
         for obj in flatten_result_cleansed:
             for key, value in obj.items():
                 if key.replace('#', '_') in map_data_keys:
                     flattened_obj[key.replace('#', '_')] = value
-                else:
-                    if value not in flattened_obj.values():
-                        obj_to_unflatten[key] = value
+                elif value not in flattened_obj.values():
+                    obj_to_unflatten[key] = value
             unflatten_obj = self.unflatten(obj_to_unflatten, '#')
             flattened_obj.update(unflatten_obj)
             flattened_obj.update(singular_obj)
@@ -172,8 +175,8 @@ class ResultsConnector(BaseResultsConnector):
             if flattened_obj:
                 service_log_dict[service_type] = flattened_obj
                 formatted_result.append(service_log_dict)
-            flattened_obj = dict()
-            obj_to_unflatten = dict()
+            flattened_obj = {}
+            obj_to_unflatten = {}
         return formatted_result
 
     def gen_dict_extract(self, key_to_search, var):
@@ -183,17 +186,16 @@ class ResultsConnector(BaseResultsConnector):
         :param var: dict, to stix mapping
         :return: object
         """
-        if hasattr(var, 'items'):
-            for k, v in var.items():
-                if k == key_to_search:
-                    yield v
-                if isinstance(v, dict):
-                    for result in self.gen_dict_extract(key_to_search, v):
-                        yield result
-                elif isinstance(v, list):
-                    for d in v:
-                        for result in self.gen_dict_extract(key_to_search, d):
-                            yield result
+        if not hasattr(var, 'items'):
+            return
+        for k, v in var.items():
+            if k == key_to_search:
+                yield v
+            if isinstance(v, dict):
+                yield from self.gen_dict_extract(key_to_search, v)
+            elif isinstance(v, list):
+                for d in v:
+                    yield from self.gen_dict_extract(key_to_search, d)
 
     @staticmethod
     def get_protocol(value):
@@ -207,17 +209,15 @@ class ResultsConnector(BaseResultsConnector):
         translate_basepath = transmit_basepath.split(os.sep)[:-2]
         _json_path = os.sep.join([*translate_basepath, "stix_translation", "json", "network_protocol_map.json"])
 
-        if path.exists(_json_path):
-            with open(_json_path) as f_obj:
-                protocols = json.load(f_obj)
-                if str(value).isdigit():
-                    for key, val in protocols.items():
-                        if val == str(value):
-                            return key
-                else:
-                    return value
-        else:
+        if not path.exists(_json_path):
             raise FileNotFoundError
+        with open(_json_path) as f_obj:
+            protocols = json.load(f_obj)
+            if not str(value).isdigit():
+                return value
+            for key, val in protocols.items():
+                if val == str(value):
+                    return key
 
     @staticmethod
     def _unflatten_asserts(flat_dict, separator):
@@ -237,12 +237,13 @@ class ResultsConnector(BaseResultsConnector):
         """
         self._unflatten_asserts(flat_dict, separator)
         # This global dictionary is mutated and returned
-        unflattened_dict = dict()
+        unflattened_dict = {}
 
         def _unflatten(dic, keys, value):
             for key in keys[:-1]:
                 dic = dic.setdefault(key, {})
             dic[keys[-1]] = value
+
         list_keys = sorted(flat_dict.keys())
         for item in list_keys:
             _unflatten(unflattened_dict, item.split(separator),

@@ -104,7 +104,10 @@ class GuardApiClient(RestApiClient):
     def validate_response(self, p_response, prefix, abort=False):
         if p_response.code != 200:
             if abort:
-                raise Exception(prefix + "request faild " + str(p_response.code) + "-" + p_response.read())
+                raise Exception(
+                    f"{prefix}request faild {str(p_response.code)}-{p_response.read()}"
+                )
+
             return False
         return True
 
@@ -219,7 +222,7 @@ class GuardApiClient(RestApiClient):
                             res_item[value] = item_value
                             # print(str(value)+ '->'+str(res_item[value]))
                         except Exception as e:
-                            print("ERROR: Category: " + category + " key: " + key + " value: " + value)
+                            print(f"ERROR: Category: {category} key: {key} value: {value}")
                             print(e)
                     res.append(res_item)
 

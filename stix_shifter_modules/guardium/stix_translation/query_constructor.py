@@ -149,11 +149,7 @@ class QueryStringPatternTranslator:
         param_list_size = len(params_array)
         if current_result_object is None:
             current_result_object = {}
-        if current_position is None:
-            current_position = 0
-        else:
-            current_position = current_position + 1
-
+        current_position = 0 if current_position is None else current_position + 1
         if current_position < param_list_size:
             param_json_object = params_array[current_position]
             for param in param_json_object:
@@ -173,11 +169,7 @@ class QueryStringPatternTranslator:
         param_list_size = len(params_array)
         if current_result_object is None:
             current_result_object = {}
-        if current_position is None:
-            current_position = 0
-        else:
-            current_position = current_position + 1
-
+        current_position = 0 if current_position is None else current_position + 1
         if current_position < param_list_size:
             param_json_object = params_array[current_position]
             for param in param_json_object:
@@ -269,13 +261,12 @@ class QueryStringPatternTranslator:
         for report_param_index in range(self.report_params_array_size):
             self.report_params_passed = self.report_params_array[report_param_index]
             data_category = (self.report_params_passed).get("datacategory", None)
-            if(data_category is not None):
-                if data_category not in self.REPORT_DEF:
-                    report_definitions = None
-                else:
-                    report_definitions = copy.deepcopy(self.REPORT_DEF[data_category])
-            else:
+            if data_category is None:
                 report_definitions = self.generate_report_definitions()
+            elif data_category not in self.REPORT_DEF:
+                report_definitions = None
+            else:
+                report_definitions = copy.deepcopy(self.REPORT_DEF[data_category])
             # substitute Params
             if report_definitions:
                 reports_in_query = self.substitute_params_passed(report_definitions, reports_in_query)
@@ -289,13 +280,12 @@ class QueryStringPatternTranslator:
             #if clientip is not None:
             #    continue
             data_category = self.qsearch_params_passed.get("datacategory", None)
-            if data_category is not None:
-                if data_category not in self.QSEARCH_DEF:
-                    qsearch_definitions = None
-                else:
-                    qsearch_definitions = copy.deepcopy(self.QSEARCH_DEF[data_category])
-            else:
+            if data_category is None:
                 qsearch_definitions = self.generate_qsearch_definitions()
+            elif data_category not in self.QSEARCH_DEF:
+                qsearch_definitions = None
+            else:
+                qsearch_definitions = copy.deepcopy(self.QSEARCH_DEF[data_category])
             # substitute Params
             if qsearch_definitions:
                qsearch_in_query = self.substitute_qsearch_params_passed(qsearch_definitions, qsearch_in_query)
@@ -307,7 +297,7 @@ class QueryStringPatternTranslator:
     def set_filters_format(self, qse):
         for i in range(len(qse)):
             filters = json.loads(qse[i])["filters"]
-            qse_prefix = qse[i][0:str.find(qse[i], "filters") - 1:1]
+            qse_prefix = qse[i][:str.find(qse[i], "filters") - 1:1]
             qse_suffix = qse[i][str.find(qse[i], ", \"query")::1]
             str_filters = ''
             first = True
@@ -317,8 +307,8 @@ class QueryStringPatternTranslator:
                 if first:
                     first = False
                 else:
-                    str_filters = str_filters + "&"
-                str_filters = str_filters + "name=" + key + "&" + "value=" + filters[key] + "&isGroup=false"
+                    str_filters = f"{str_filters}&"
+                str_filters = f"{str_filters}name={key}&value={filters[key]}&isGroup=false"
             if str_filters.__len__() > 0:
                 str_filters = "\"filters\":\"" + str_filters + "\""
                 qse[i] = qse_prefix + str_filters + qse_suffix
@@ -328,7 +318,7 @@ class QueryStringPatternTranslator:
     def set_query_format(self, qse):
         for i in range(len(qse)):
             query = json.loads(qse[i])["query"]
-            qse_prefix = qse[i][0:str.find(qse[i], "query") - 1:1]
+            qse_prefix = qse[i][:str.find(qse[i], "query") - 1:1]
             qse_suffix = qse[i][str.find(qse[i], ", \"fetchSize")::1]
             str_query = ''
             first = True
@@ -338,8 +328,8 @@ class QueryStringPatternTranslator:
                 if first:
                     first = False
                 else:
-                    str_query = str_query + " AND "
-                str_query = str_query +  key + query[key]["operation"] +query[key]["value"] 
+                    str_query = f"{str_query} AND "
+                str_query = str_query +  key + query[key]["operation"] +query[key]["value"]
             if str_query.__len__() > 0:
                 str_query = "\"query\":\"" + str_query + "\""
                 qse[i] = qse_prefix + str_query + qse_suffix
@@ -361,7 +351,6 @@ class QueryStringPatternTranslator:
                 param_set = set(self.REPORT_PARAMS_MAP["defaultReports"])
             else:
                 param_set = None
-
 # find interaction
 # param_set
             if param_set is not None:
@@ -452,24 +441,18 @@ class QueryStringPatternTranslator:
     @staticmethod
     def _format_set(values) -> str:
         gen = values.element_iterator()
-        return "({})".format(' OR '.join([QueryStringPatternTranslator._escape_value(value) for value in gen]))
+        return f"({' OR '.join([QueryStringPatternTranslator._escape_value(value) for value in gen])})"
 
     @staticmethod
     def _format_match(value) -> str:
         raw = QueryStringPatternTranslator._escape_value(value)
-        if raw[0] == "^":
-            raw = raw[1:]
-        else:
-            raw = ".*" + raw
-        if raw[-1] == "$":
-            raw = raw[0:-1]
-        else:
-            raw = raw + ".*"
-        return "\'{}\'".format(raw)
+        raw = raw[1:] if raw[0] == "^" else f".*{raw}"
+        raw = raw[:-1] if raw[-1] == "$" else f"{raw}.*"
+        return f"\'{raw}\'"
 
     @staticmethod
     def _format_equality(value) -> str:
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _format_like(value) -> str:
@@ -485,15 +468,19 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _negate_comparison(comparison_string):
-        return "NOT({})".format(comparison_string)
+        return f"NOT({comparison_string})"
 
     @staticmethod
     def _check_value_type(value):
         value = str(value)
-        for key, pattern in observable.REGEX.items():
-            if key != 'date' and bool(re.search(pattern, value)):
-                return key
-        return None
+        return next(
+            (
+                key
+                for key, pattern in observable.REGEX.items()
+                if key != 'date' and bool(re.search(pattern, value))
+            ),
+            None,
+        )
 
 
     @staticmethod
@@ -506,10 +493,12 @@ class QueryStringPatternTranslator:
 
         for mapped_field in mapped_fields_array:
             if is_reference_value:
-                parsed_reference = "{mapped_field} {comparator} {value}".format(mapped_field=mapped_field, comparator=comparator, value=value)
-                if not parsed_reference:
+                if parsed_reference := "{mapped_field} {comparator} {value}".format(
+                    mapped_field=mapped_field, comparator=comparator, value=value
+                ):
+                    comparison_string += parsed_reference
+                else:
                     continue
-                comparison_string += parsed_reference
             else:
                 comparison_string += "{mapped_field} {comparator} {value}".format(mapped_field=mapped_field, comparator=comparator, value=value)
                 #self.report_params_passed[mapped_field] = str(value).replace("'","",10)
@@ -522,7 +511,7 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _is_reference_value(stix_field):
-        return stix_field == 'src_ref.value' or stix_field == 'dst_ref.value'
+        return stix_field in ['src_ref.value', 'dst_ref.value']
 
     def _parse_expression(self, expression, qualifier=None) -> str:
         if isinstance(expression, ComparisonExpression):  # Base Case
@@ -533,29 +522,30 @@ class QueryStringPatternTranslator:
             # Resolve the comparison symbol to use in the query string (usually just ':')
             comparator = self.comparator_lookup[expression.comparator]
 
-            if stix_field == 'start' or stix_field == 'end':
+            if stix_field in ['start', 'end']:
                 transformer = TimestampToGuardium()
                 expression.value = transformer.transform(expression.value)
 
             # Some values are formatted differently based on how they're being compared
             if expression.comparator == ComparisonComparators.Matches:  # needs forward slashes
                 value = self._format_match(expression.value)
-            # should be (x, y, z, ...)
             elif expression.comparator == ComparisonComparators.In:
                 value = self._format_set(expression.value)
-            elif expression.comparator == ComparisonComparators.Equal or expression.comparator == ComparisonComparators.NotEqual:
+            elif expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+            ]:
                 # Should be in single-quotes
                 value = self._format_equality(expression.value)
-            # '%' -> '*' wildcard, '_' -> '?' single wildcard
             elif expression.comparator == ComparisonComparators.Like:
                 value = self._format_like(expression.value)
             else:
                 value = self._escape_value(expression.value)
 
             comparison_string = self._parse_mapped_fields(self, expression, value, comparator, stix_field, mapped_fields_array)
-            if(len(mapped_fields_array) > 1 and not self._is_reference_value(stix_field)):
+            if (len(mapped_fields_array) > 1 and not self._is_reference_value(stix_field)):
                 # More than one data source field maps to the STIX attribute, so group comparisons together.
-                grouped_comparison_string = "(" + comparison_string + ")"
+                grouped_comparison_string = f"({comparison_string})"
                 comparison_string = grouped_comparison_string
 
             if expression.comparator == ComparisonComparators.NotEqual:
@@ -564,9 +554,9 @@ class QueryStringPatternTranslator:
             if expression.negated:
                 comparison_string = self._negate_comparison(comparison_string)
             if qualifier is not None:
-                return "{} {}".format(comparison_string, qualifier)
+                return f"{comparison_string} {qualifier}"
             else:
-                return "{}".format(comparison_string)
+                return f"{comparison_string}"
 
         elif isinstance(expression, CombinedComparisonExpression):
             operator = self.comparator_lookup[expression.operator]
@@ -575,42 +565,44 @@ class QueryStringPatternTranslator:
             if not expression_01 or not expression_02:
                 return ''
             if isinstance(expression.expr1, CombinedComparisonExpression):
-                expression_01 = "({})".format(expression_01)
+                expression_01 = f"({expression_01})"
             if isinstance(expression.expr2, CombinedComparisonExpression):
-                expression_02 = "({})".format(expression_02)
-            query_string = "{} {} {}".format(expression_01, operator, expression_02)
+                expression_02 = f"({expression_02})"
+            query_string = f"{expression_01} {operator} {expression_02}"
             if qualifier is not None:
-                return "{} {}".format(query_string, qualifier)
+                return f"{query_string} {qualifier}"
             else:
-                return "{}".format(query_string)
+                return f"{query_string}"
         elif isinstance(expression, ObservationExpression):
             return self._parse_expression(expression.comparison_expression, qualifier)
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
-            if isinstance(expression.observation_expression, CombinedObservationExpression):
-                operator = self.comparator_lookup[expression.observation_expression.operator]
-                # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
-                return "{expr1} {operator} {expr2}".format(expr1=self._parse_expression(expression.observation_expression.expr1),
-                                                           operator=operator,
-                                                           expr2=self._parse_expression(expression.observation_expression.expr2, expression.qualifier))
-            else:
+            if not isinstance(
+                expression.observation_expression, CombinedObservationExpression
+            ):
                 return self._parse_expression(expression.observation_expression.comparison_expression, expression.qualifier)
+            operator = self.comparator_lookup[expression.observation_expression.operator]
+            # qualifier only needs to be passed into the parse expression once since it will be the same for both expressions
+            return "{expr1} {operator} {expr2}".format(expr1=self._parse_expression(expression.observation_expression.expr1),
+                                                       operator=operator,
+                                                       expr2=self._parse_expression(expression.observation_expression.expr2, expression.qualifier))
         elif isinstance(expression, CombinedObservationExpression):
             operator = self.comparator_lookup[expression.operator]
             expression_01 = self._parse_expression(expression.expr1)
             expression_02 = self._parse_expression(expression.expr2)
             if expression_01 and expression_02:
-                return "({}) {} ({})".format(expression_01, operator, expression_02)
+                return f"({expression_01}) {operator} ({expression_02})"
             elif expression_01:
-                return "{}".format(expression_01)
+                return f"{expression_01}"
             elif expression_02:
-                return "{}".format(expression_02)
+                return f"{expression_02}"
             else:
                 return ''
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -627,7 +619,6 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options, transformer
     # Add space around START STOP qualifiers
     report_call = re.sub("START", "START ", report_call)
     report_call = re.sub("STOP", " STOP ", report_call)
-
 # Subroto: I did not change the code much just adapted to get the report parameters
 # Subroto: added code to support report search parameters are "and" when sent to Guardium
     # translate the structure of report_call
@@ -642,17 +633,8 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options, transformer
     if data_model_mapping.dialect == 'report':
         output_array = guardium_query_translator.build_array_of_guardium_report_params(result_array, result_position, None, json_report_call, None)
         guardium_query_translator.set_report_params_passed(output_array)
-        report_header = guardium_query_translator.get_report_params()
+        return guardium_query_translator.get_report_params()
     else:
         output_array = guardium_query_translator.build_array_of_guardium_qsearch_params(result_array, result_position, None, json_qsearch_call, None)
         guardium_query_translator.set_qsearch_params_passed(output_array)
-        report_header = guardium_query_translator.get_qsearch_params()
-
-    if report_header:
-        # Change return statement as required to fit with data source query language.
-        # If supported by the language, a limit on the number of results may be desired.
-        # A single query string, or an array of query strings may be returned
-        return report_header
-    else:
-        # report_header = {"ID": 2000, "message": "Could not generate query -- issue with data_category."}
-        return report_header
+        return guardium_query_translator.get_qsearch_params()

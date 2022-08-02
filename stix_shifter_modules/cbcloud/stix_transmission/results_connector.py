@@ -15,7 +15,7 @@ class ResultsConnector(BaseResultsConnector):
         response_code = response.code
         response_text = response.read()
         error = None
-        response_dict = dict()
+        response_dict = {}
 
         try:
             response_dict = json.loads(response_text)
@@ -23,9 +23,7 @@ class ResultsConnector(BaseResultsConnector):
             self.logger.debug(response_text)
             error = Exception(f'Can not parse response: {ex}')
 
-        return_obj = dict()
-        return_obj['success'] = False
-
+        return_obj = {'success': False}
         if response_dict and response_code == 200:
             return_obj['success'] = True
             return_obj['data'] = response_dict['results']

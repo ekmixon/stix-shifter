@@ -88,7 +88,7 @@ class TestStixtoQuery(unittest.TestCase, object):
     def test_complex_query(self):
         stix_pattern = "[network-traffic:protocols[*] LIKE 'ipv_' AND network-traffic:src_port>443] START t'2019-04-11T08:42:39.297Z' STOP t'2019-04-11T08:43:39.297Z' OR [user-account:user_id = '_' AND artifact:payload_bin LIKE '%'] START t'2019-04-11T14:35:44.011Z' STOP t'2019-04-21T16:35:44.011Z' AND [process:pid<700 OR url:value LIKE '%' AND process:creator_user_ref.user_id IN ('root','admin')] START t'2019-04-11T14:35:44.011Z' STOP t'2019-04-17T14:35:44.011Z'"
         translated_query = translation.translate('elastic_ecs', 'query', '{}', stix_pattern)
-        print(str(translated_query))
+        print(translated_query)
         test_query = ['((source.port:>443 OR client.port:>443) AND (network.transport : ipv? OR network.type : ipv? OR network.protocol : ipv?)) AND (@timestamp:["2019-04-11T08:42:39.297Z" TO "2019-04-11T08:43:39.297Z"])',
                       '(event.original : * AND (user.name : "_" OR user.id : "_")) AND (@timestamp:["2019-04-11T14:35:44.011Z" TO "2019-04-21T16:35:44.011Z"])', '(((user.name : ("root" OR "admin") AND url.original : *)) OR (process.pid:<700 OR process.ppid:<700 OR process.parent.pid:<700 OR process.parent.ppid:<700)) AND (@timestamp:["2019-04-11T14:35:44.011Z" TO "2019-04-17T14:35:44.011Z"])']
         assert translated_query['queries'] == test_query
@@ -222,7 +222,8 @@ class TestStixtoQuery(unittest.TestCase, object):
     def test_combined_observations_with_one_qualifier(self):
         start_time = "t'2019-04-01T01:30:00.123Z'"
         stop_time = "t'2019-04-01T02:20:00.123Z'"
-        stix_pattern = "([network-traffic:src_port = 37020 AND user-account:user_id = 'root'] OR [ipv4-addr:value = '192.168.122.83']) START {} STOP {}".format(start_time, stop_time)
+        stix_pattern = f"([network-traffic:src_port = 37020 AND user-account:user_id = 'root'] OR [ipv4-addr:value = '192.168.122.83']) START {start_time} STOP {stop_time}"
+
         translated_query = translation.translate('elastic_ecs', 'query', '{}', stix_pattern)
         translated_query['queries'][-1] = _remove_timestamp_from_query(translated_query['queries'][-1])
         test_query = ['(source.ip : "192.168.122.83" OR destination.ip : "192.168.122.83" OR client.ip : "192.168.122.83" OR server.ip : "192.168.122.83" OR host.ip : "192.168.122.83" OR dns.resolved_ip : "192.168.122.83") AND (@timestamp:["2019-04-01T01:30:00.123Z" TO "2019-04-01T02:20:00.123Z"])',
@@ -235,7 +236,8 @@ class TestStixtoQuery(unittest.TestCase, object):
         stop_time_01 = "t'2019-04-01T02:20:00.123Z'"
         start_time_02 = "t'2019-04-01T03:55:00.123Z'"
         stop_time_02 = "t'2019-04-01T04:30:24.743Z'"
-        stix_pattern = "[network-traffic:src_port = 37020 AND user-account:user_id = 'root'] START {} STOP {} OR [ipv4-addr:value = '192.168.122.83'] START {} STOP {}".format(start_time_01, stop_time_01, start_time_02, stop_time_02)
+        stix_pattern = f"[network-traffic:src_port = 37020 AND user-account:user_id = 'root'] START {start_time_01} STOP {stop_time_01} OR [ipv4-addr:value = '192.168.122.83'] START {start_time_02} STOP {stop_time_02}"
+
         translated_query = translation.translate('elastic_ecs', 'query', '{}', stix_pattern)
         test_query = ['((user.name : "root" OR user.id : "root") AND (source.port : "37020" OR client.port : "37020")) AND (@timestamp:["2019-04-01T01:30:00.123Z" TO "2019-04-01T02:20:00.123Z"])',
                       '(source.ip : "192.168.122.83" OR destination.ip : "192.168.122.83" OR client.ip : "192.168.122.83" OR server.ip : "192.168.122.83" OR host.ip : "192.168.122.83" OR dns.resolved_ip : "192.168.122.83") AND (@timestamp:["2019-04-01T03:55:00.123Z" TO "2019-04-01T04:30:24.743Z"])']
@@ -247,8 +249,8 @@ class TestStixtoQuery(unittest.TestCase, object):
         stop_time_01 = "t'2019-04-01T01:11:11.456Z'"
         start_time_02 = "t'2019-04-07T02:22:22.789Z'"
         stop_time_02 = "t'2019-04-07T03:33:33.012Z'"
-        stix_pattern = "[network-traffic:src_port = 37020 AND network-traffic:dst_port = 635] START {} STOP {} OR [url:value = 'www.example.com'] OR [ipv4-addr:value = '333.333.333.0'] START {} STOP {}".format(
-            start_time_01, stop_time_01, start_time_02, stop_time_02)
+        stix_pattern = f"[network-traffic:src_port = 37020 AND network-traffic:dst_port = 635] START {start_time_01} STOP {stop_time_01} OR [url:value = 'www.example.com'] OR [ipv4-addr:value = '333.333.333.0'] START {start_time_02} STOP {stop_time_02}"
+
         translated_query = translation.translate('elastic_ecs', 'query', '{}', stix_pattern)
         translated_query['queries'][-1] = _remove_timestamp_from_query(translated_query['queries'][-1])
         test_query = ['((destination.port : "635" OR server.port : "635") AND (source.port : "37020" OR client.port : "37020")) AND (@timestamp:["2019-04-01T00:00:00.123Z" TO "2019-04-01T01:11:11.456Z"])',

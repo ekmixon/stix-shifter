@@ -32,20 +32,19 @@ class Connector(BaseSyncConnector):
 
     def ping_connection(self):
         response_txt = None
-        return_obj = dict()
+        return_obj = {}
         try:
             response = self.api_client.ping_box()
             return self._handle_errors(response, return_obj)
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')
 
     def create_results_connection(self, query, offset, length):
         response_txt = None
-        return_obj = dict()
+        return_obj = {}
 
         try:
             response = self.api_client.run_search(query, offset, length)
@@ -61,8 +60,7 @@ class Connector(BaseSyncConnector):
 
             return return_obj
         except Exception as e:
-            if response_txt is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_txt))
-            else:
+            if response_txt is None:
                 raise e
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_txt)}')

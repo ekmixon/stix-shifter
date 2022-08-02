@@ -22,7 +22,7 @@ class APIClient:
                                     )
 
     def ping_data_source(self):
-        data, headers = dict(), dict()
+        data, headers = {}, {}
         data['search_session_id'] = int(round(time.time() * 1000))
         data['user_session_id'] = self.get_user_session_id()
         data['start_time'] = self.get_current_time()['start_time']
@@ -32,9 +32,8 @@ class APIClient:
         return self.client.call_api(self.QUERY_ENDPOINT, 'POST', headers, data=json.dumps(data))
 
     def create_search(self, query_expression):
-        return_obj = dict()
-        auth = dict()
-        auth['search_session_id'] = int(round(time.time() * 1000))
+        return_obj = {}
+        auth = {'search_session_id': int(round(time.time() * 1000))}
         auth['user_session_id'] = self.get_user_session_id()
         try:
             query = json.loads(query_expression)
@@ -65,7 +64,7 @@ class APIClient:
             raise err
 
     def get_search_status(self, search_session_id, user_session_id):
-        headers, params = dict(), dict()
+        headers, params = {}, {}
         params['search_session_id'] = int(search_session_id)
         params['user_session_id'] = user_session_id
         headers['Content-Type'] = 'application/json'
@@ -73,7 +72,7 @@ class APIClient:
         return self.client.call_api(self.STATUS_ENDPOINT, 'POST', headers, data=json.dumps(params))
 
     def get_search_results(self, search_session_id, user_session_id, range_start=None, range_end=None):
-        headers, params = dict(), dict()
+        headers, params = {}, {}
         params['search_session_id'] = int(search_session_id)
         params['user_session_id'] = user_session_id
         params['offset'] = int(range_start)
@@ -83,7 +82,7 @@ class APIClient:
         return self.client.call_api(self.RESULT_ENDPOINT, 'POST', headers, data=json.dumps(params))
 
     def delete_search(self, search_session_id, user_session_id):
-        headers, params = dict(), dict()
+        headers, params = {}, {}
         params['search_session_id'] = int(search_session_id)
         params['user_session_id'] = user_session_id
         headers['Content-Type'] = 'application/json'
@@ -108,9 +107,6 @@ class APIClient:
 
     @staticmethod
     def get_current_time():
-        ping_time = dict()
         end_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         start_time = (datetime.utcnow() - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-        ping_time['start_time'] = start_time
-        ping_time['end_time'] = end_time
-        return ping_time
+        return {'start_time': start_time, 'end_time': end_time}

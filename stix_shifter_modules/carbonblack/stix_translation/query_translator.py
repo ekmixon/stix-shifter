@@ -19,6 +19,6 @@ class QueryTranslator(BaseQueryTranslator):
 
         logger.info("Converting STIX2 Pattern to cbquery")
 
-        query_string = query_constructor.translate_pattern(
-            antlr_parsing_object, self, self.options)
-        return query_string
+        return query_constructor.translate_pattern(
+            antlr_parsing_object, self, self.options
+        )

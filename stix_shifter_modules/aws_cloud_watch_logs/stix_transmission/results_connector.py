@@ -22,16 +22,15 @@ class ResultsConnector(BaseResultsConnector):
         :param length: str, length value
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
-            query = dict()
             offset = int(offset)
             length = int(length)
             if ':' in search_id:
                 search_id = search_id.split(':')[0]
             total_records = offset+length
-            query['queryId'] = search_id
+            query = {'queryId': search_id}
             response_dict = self.client.get_query_results(**query)
             return_obj['success'] = True
             results = response_dict['results'][offset:total_records]
@@ -54,14 +53,18 @@ class ResultsConnector(BaseResultsConnector):
         :return: dict
         """
         for record in results:
-            record_dict = dict()
-            for data in record:
-                record_dict[data['field']] = data['value']
-            if 'source' in record_dict.keys() and record_dict['source'] == 'aws.guardduty':
+            record_dict = {data['field']: data['value'] for data in record}
+            if (
+                'source' in record_dict
+                and record_dict['source'] == 'aws.guardduty'
+            ):
                 json_message = record_dict['@message']
                 data = json.loads(json_message)
                 flatten_results = flatten(data)
-                flatten_results = {k: v for k, v in flatten_results.items() if v != "" and v != {}}
+                flatten_results = {
+                    k: v for k, v in flatten_results.items() if v not in ["", {}]
+                }
+
                 if flatten_results.get('detail_service_action_actionType') is None:
                     continue
                 if flatten_results.get('detail_service_action_networkConnectionAction_protocol') == 'Unknown':
@@ -71,8 +74,7 @@ class ResultsConnector(BaseResultsConnector):
                 guardduty_results['guardduty'].update({'event_count': 1})
                 result_list.append(guardduty_results)
             elif 'source' not in record_dict.keys():
-                vpc_dict = dict()
-                vpc_dict['vpcflow'] = copy.deepcopy(record_dict)
+                vpc_dict = {'vpcflow': copy.deepcopy(record_dict)}
                 vpc_dict['vpcflow']['protocol'] = self.get_protocol(vpc_dict['vpcflow']['protocol'])
                 vpc_dict['vpcflow']['event_count'] = 1
                 result_list.append(vpc_dict)
@@ -90,8 +92,14 @@ class ResultsConnector(BaseResultsConnector):
         :param flatten_results: dict
         :return: dict
         """
-        guard_dict, guard_dict['guardduty'], guard_dict['guardduty'][flatten_results.get(
-            'detail_service_action_actionType')] = dict(), dict(), dict()
+        (
+            guard_dict,
+            guard_dict['guardduty'],
+            guard_dict['guardduty'][
+                flatten_results.get('detail_service_action_actionType')
+            ],
+        ) = ({}, {}, {})
+
         guardduty_common_attr = self.get_guardduty_common_attr()
         for key, val in flatten_results.items():
             if val is None or val == []:
@@ -113,12 +121,11 @@ class ResultsConnector(BaseResultsConnector):
         :param value: str, protocol
         :return: str, protocol
         """
-        if value.isdigit():
-            for key, val in self.mapping_protocol.items():
-                if val == value:
-                    return key
-        else:
+        if not value.isdigit():
             return value
+        for key, val in self.mapping_protocol.items():
+            if val == value:
+                return key
 
     def get_guardduty_common_attr(self):
         """

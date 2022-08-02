@@ -13,9 +13,7 @@ class PingConnector(BasePingConnector):
     def ping_connection(self):
         response = self.api_client.ping_data_source()
         response_code = response.code
-        return_obj = dict()
-        return_obj['success'] = False
-
+        return_obj = {'success': False}
         if response_code == 200:
             return_obj['success'] = True
         else:

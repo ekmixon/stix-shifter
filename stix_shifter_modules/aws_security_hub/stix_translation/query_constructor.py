@@ -44,7 +44,7 @@ class QueryStringPatternTranslator:
         if comparison == ComparisonComparators.Equal:
             return {field: [{"Cidr": val}]}
         else:
-            raise RuntimeError("Unsupported comparison for IP {}".format(comparison))
+            raise RuntimeError(f"Unsupported comparison for IP {comparison}")
 
     def numberFilter(self, field, comparison, val):
         if comparison == ComparisonComparators.Equal:
@@ -60,14 +60,14 @@ class QueryStringPatternTranslator:
         elif comparison == ComparisonComparators.GreaterThan:
             return {field: [{"Gte": val + 1}]}
         else:
-            raise RuntimeError("Unsupported comparison for numeric {}".format(comparison))
+            raise RuntimeError(f"Unsupported comparison for numeric {comparison}")
 
     def dateFilter(self, field, comparison, val):
         dt = dateutil.parser.parse(val)
         before = (dt - timedelta(seconds=1)).isoformat()
         after = (dt + timedelta(seconds=1)).isoformat()
-        forever = dtime.fromtimestamp(int(2147483647)).isoformat()
-        never = dtime.fromtimestamp(int(0)).isoformat()
+        forever = dtime.fromtimestamp(2147483647).isoformat()
+        never = dtime.fromtimestamp(0).isoformat()
 
         if comparison == ComparisonComparators.Equal:
             return {field: [{"Start": val, "End": val}]}
@@ -82,7 +82,7 @@ class QueryStringPatternTranslator:
         elif comparison == ComparisonComparators.GreaterThan:
             return {field: [{"Start": after, "End": forever}]}
         else:
-            raise RuntimeError("Unsupported comparison for date {}".format(comparison))
+            raise RuntimeError(f"Unsupported comparison for date {comparison}")
 
     def stringFilter(self, field, comparison, val):
         if comparison == ComparisonComparators.Equal:
@@ -90,7 +90,7 @@ class QueryStringPatternTranslator:
         elif comparison == ComparisonComparators.Like:
             return {field: [{"Comparison": "CONTAINS", "Value": val.replace("%", "")}]}
         else:
-            raise RuntimeError("Unsupported comparison for string {}".format(comparison))
+            raise RuntimeError(f"Unsupported comparison for string {comparison}")
 
     def _parse_expression(self, expression, qualifier=None) -> str:
         filters = []
@@ -120,7 +120,10 @@ class QueryStringPatternTranslator:
 
             mapped_field = mapped_fields_array[0]
             filterObject = filterTypes.get(
-                mapped_field, lambda a, b: "Unsupported filter type {}".format(mapped_field))
+                mapped_field,
+                lambda a, b: f"Unsupported filter type {mapped_field}",
+            )
+
             filter = filterObject(mapped_field, expression.comparator, expression.value)
 
             if len(mapped_fields_array) > 1:
@@ -128,77 +131,117 @@ class QueryStringPatternTranslator:
                 for i in range(1, len(mapped_fields_array)):
                     mapped_field = mapped_fields_array[i]
                     filterObject = filterTypes.get(
-                        mapped_field, lambda a, b: "Unsupported filter type {}".format(mapped_field))
+                        mapped_field,
+                        lambda a, b: f"Unsupported filter type {mapped_field}",
+                    )
+
                     filter['orlist'].append(filterObject(
                         mapped_field, expression.comparator, expression.value))
 
             filters.append(filter)
 
             if qualifier is not None:
-                m = re.search(
-                    "STARTt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')STOPt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')", qualifier)
-                if m:
-                    filters.append(self.dateFilter("FirstObservedAt",
-                                                   ComparisonComparators.GreaterThanOrEqual, m.group(1)))
-                    filters.append(self.dateFilter("LastObservedAt",
-                                                   ComparisonComparators.LessThan, m.group(2)))
+                if m := re.search(
+                    "STARTt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')STOPt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')",
+                    qualifier,
+                ):
+                    filters.extend(
+                        (
+                            self.dateFilter(
+                                "FirstObservedAt",
+                                ComparisonComparators.GreaterThanOrEqual,
+                                m[1],
+                            ),
+                            self.dateFilter(
+                                "LastObservedAt",
+                                ComparisonComparators.LessThan,
+                                m[2],
+                            ),
+                        )
+                    )
+
                 else:
-                    raise RuntimeError(
-                        "Qualifier {} is not currently supported".format(dumps(qualifier)))
+                    raise RuntimeError(f"Qualifier {dumps(qualifier)} is not currently supported")
 
             return filters
 
-        elif isinstance(expression, CombinedComparisonExpression) or isinstance(expression, CombinedObservationExpression):
+        elif isinstance(
+            expression,
+            (CombinedComparisonExpression, CombinedObservationExpression),
+        ):
             # [ a:foo = x AND b:foo = y ]
             comparator = self.comparator_lookup[expression.operator]
-            if comparator == ComparisonExpressionOperators.Or or comparator == ObservationOperators.Or:
+            if comparator in [
+                ComparisonExpressionOperators.Or,
+                ObservationOperators.Or,
+            ]:
                 raise RuntimeError("\"OR\" comparisons are not currently supported")
 
-            filters.append(self._parse_expression(expression.expr1))
-            filters.append(self._parse_expression(expression.expr2))
+            filters.extend(
+                (
+                    self._parse_expression(expression.expr1),
+                    self._parse_expression(expression.expr2),
+                )
+            )
 
             if qualifier is not None:
-                m = re.search(
-                    "STARTt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')STOPt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')", qualifier)
-                if m:
-                    filters.append(self.dateFilter("FirstObservedAt",
-                                                   ComparisonComparators.GreaterThanOrEqual, m.group(1)))
-                    filters.append(self.dateFilter("LastObservedAt",
-                                                   ComparisonComparators.LessThan, m.group(2)))
+                if m := re.search(
+                    "STARTt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')STOPt('\\d{4}(-\\d{2}){2}T\\d{2}(:\\d{2}){2}(\\.\\d+)?Z')",
+                    qualifier,
+                ):
+                    filters.extend(
+                        (
+                            self.dateFilter(
+                                "FirstObservedAt",
+                                ComparisonComparators.GreaterThanOrEqual,
+                                m[1],
+                            ),
+                            self.dateFilter(
+                                "LastObservedAt",
+                                ComparisonComparators.LessThan,
+                                m[2],
+                            ),
+                        )
+                    )
+
                 else:
-                    raise RuntimeError(
-                        "Qualifier {} is not currently supported".format(dumps(qualifier)))
+                    raise RuntimeError(f"Qualifier {dumps(qualifier)} is not currently supported")
             return filters
 
         elif isinstance(expression, ObservationExpression):
             # [ a:foo = x AND b:foo = y ]
             return self._parse_expression(expression.comparison_expression, qualifier)
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
-            # [ a:foo = x AND b:foo = y ] START X STOP Y
-            if isinstance(expression.observation_expression, CombinedObservationExpression):
-                comparator = self.comparator_lookup[expression.observation_expression.operator]
-                if comparator == ObservationOperators.Or:
-                    raise RuntimeError("\"OR\" comparisons are not currently supported")
-
-                filters.append(
-                    self._parse_expression(expression.observation_expression.expr1)
-                )
-                filters.append(
-                    self._parse_expression(expression.observation_expression.expr2)
-                )
-
-                return filters
-            else:
+            if not isinstance(
+                expression.observation_expression, CombinedObservationExpression
+            ):
                 return self._parse_expression(
                     expression.observation_expression.comparison_expression,
                     expression.qualifier
                 )
 
+            comparator = self.comparator_lookup[expression.observation_expression.operator]
+            if comparator == ObservationOperators.Or:
+                raise RuntimeError("\"OR\" comparisons are not currently supported")
+
+            filters.extend(
+                (
+                    self._parse_expression(
+                        expression.observation_expression.expr1
+                    ),
+                    self._parse_expression(
+                        expression.observation_expression.expr2
+                    ),
+                )
+            )
+
+            return filters
         elif isinstance(expression, Pattern):
             return self._parse_expression(expression.expression)
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -208,7 +251,7 @@ def filtersToQueries(filters):
     queries = []
     filterObject = {}
 
-    for i in range(0, len(filters)):
+    for i in range(len(filters)):
         filter = filters[i]
         if 'orlist' in filter:
 
@@ -232,8 +275,4 @@ def translate_pattern(pattern: Pattern, data_model_mapping):
     filters = QueryStringPatternTranslator(pattern, data_model_mapping) \
         .translated
 
-    # Need to construct N*M list of queries based on any filter that maps to
-    # more than one property!
-    queries = filtersToQueries(filters)
-
-    return queries
+    return filtersToQueries(filters)

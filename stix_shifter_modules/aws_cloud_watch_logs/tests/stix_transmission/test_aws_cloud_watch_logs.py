@@ -31,174 +31,101 @@ class AWSMockJsonResponse:
 
     @staticmethod
     def assume_role(**kwargs):
-        json_response = {'Credentials': {'AccessKeyId': 'abc', 'SecretAccessKey': 'xyz', 'SessionToken': '123abc'}}
-        return json_response
+        return {
+            'Credentials': {
+                'AccessKeyId': 'abc',
+                'SecretAccessKey': 'xyz',
+                'SessionToken': '123abc',
+            }
+        }
 
     @staticmethod
     def describe_log_groups(**kwargs):
-        json_response = {
+        return {
             "logGroups": [
                 {
                     "arn": "arn:aws:logs:us-east-1:979326520502:log-group:/aws/events/guardduty:*",
                     "creationTime": 1571122789371,
                     "logGroupName": "/aws/events/guardduty",
                     "metricFilterCount": 0,
-                    "storedBytes": 196184
-                }]
+                    "storedBytes": 196184,
+                }
+            ]
         }
-        return json_response
 
     @staticmethod
     def start_query(**kwargs):
-        json_response = {"queryId": "0c8ed381-f1c8-406d-a293-406b64607870"}
-        return json_response
+        return {"queryId": "0c8ed381-f1c8-406d-a293-406b64607870"}
 
     @staticmethod
     def stop_query(**kwargs):
-        json_response = {"success": True}
-        return json_response
+        return {"success": True}
 
     @staticmethod
     def get_query_results(**kwargs):
-        json_response = {
+        return {
             "results": [
                 [
-                    {
-                        "field": "@timestamp",
-                        "value": "2019-10-30 11:01:03.000"
-                    },
-                    {
-                        "field": "srcAddr",
-                        "value": "172.31.88.63"
-                    },
-                    {
-                        "field": "dstAddr",
-                        "value": "54.239.30.195"
-                    },
-                    {
-                        "field": "srcPort",
-                        "value": "41900"
-                    },
-                    {
-                        "field": "dstPort",
-                        "value": "443"
-                    },
-                    {
-                        "field": "protocol",
-                        "value": "6"
-                    },
-                    {
-                        "field": "start",
-                        "value": "1572433263"
-                    },
-                    {
-                        "field": "end",
-                        "value": "1572433309"
-                    },
-                    {
-                        "field": "accountId",
-                        "value": "979326520502"
-                    },
-                    {
-                        "field": "interfaceId",
-                        "value": "eni-02e70b8e842c70a2f"
-                    },
-                    {
-                        "field": "bytes",
-                        "value": "3646"
-                    },
-                    {
-                        "field": "packets",
-                        "value": "16"
-                    },
+                    {"field": "@timestamp", "value": "2019-10-30 11:01:03.000"},
+                    {"field": "srcAddr", "value": "172.31.88.63"},
+                    {"field": "dstAddr", "value": "54.239.30.195"},
+                    {"field": "srcPort", "value": "41900"},
+                    {"field": "dstPort", "value": "443"},
+                    {"field": "protocol", "value": "6"},
+                    {"field": "start", "value": "1572433263"},
+                    {"field": "end", "value": "1572433309"},
+                    {"field": "accountId", "value": "979326520502"},
+                    {"field": "interfaceId", "value": "eni-02e70b8e842c70a2f"},
+                    {"field": "bytes", "value": "3646"},
+                    {"field": "packets", "value": "16"},
                     {
                         "field": "@ptr",
-                        "value":
-                            "CloKIQodOTc5MzI2NTIwNTAyOlVTRWFzdDFfRmxvd0xvZ3MQBBI1GhgCBdlAMFMAAAAAg2XOMQAF25"
-                            "bRkAAAADIgASiwj8Li4S0wmPPN4uEtOChAsi1IrihQrSEQHhgB"
-                    }
+                        "value": "CloKIQodOTc5MzI2NTIwNTAyOlVTRWFzdDFfRmxvd0xvZ3MQBBI1GhgCBdlAMFMAAAAAg2XOMQAF25"
+                        "bRkAAAADIgASiwj8Li4S0wmPPN4uEtOChAsi1IrihQrSEQHhgB",
+                    },
                 ]
             ],
             "statistics": {
-                "bytesScanned": 7.1185346E7,
+                "bytesScanned": 7.1185346e7,
                 "recordsMatched": 254533.0,
-                "recordsScanned": 492595.0
+                "recordsScanned": 492595.0,
             },
-            "status": "Complete"
+            "status": "Complete",
         }
-        return json_response
 
 
 class MockStatusResponse:
     @staticmethod
     def get_query_results(**kwargs):
-        json_response = {
+        return {
             "results": [
                 [
-                    {
-                        "field": "@timestamp",
-                        "value": "2019-10-30 11:01:03.000"
-                    },
-                    {
-                        "field": "srcAddr",
-                        "value": "172.31.88.63"
-                    },
-                    {
-                        "field": "dstAddr",
-                        "value": "54.239.30.195"
-                    },
-                    {
-                        "field": "srcPort",
-                        "value": "41900"
-                    },
-                    {
-                        "field": "dstPort",
-                        "value": "443"
-                    },
-                    {
-                        "field": "protocol",
-                        "value": "6"
-                    },
-                    {
-                        "field": "start",
-                        "value": "1572433263"
-                    },
-                    {
-                        "field": "end",
-                        "value": "1572433309"
-                    },
-                    {
-                        "field": "accountId",
-                        "value": "979326520502"
-                    },
-                    {
-                        "field": "interfaceId",
-                        "value": "eni-02e70b8e842c70a2f"
-                    },
-                    {
-                        "field": "bytes",
-                        "value": "3646"
-                    },
-                    {
-                        "field": "packets",
-                        "value": "16"
-                    },
+                    {"field": "@timestamp", "value": "2019-10-30 11:01:03.000"},
+                    {"field": "srcAddr", "value": "172.31.88.63"},
+                    {"field": "dstAddr", "value": "54.239.30.195"},
+                    {"field": "srcPort", "value": "41900"},
+                    {"field": "dstPort", "value": "443"},
+                    {"field": "protocol", "value": "6"},
+                    {"field": "start", "value": "1572433263"},
+                    {"field": "end", "value": "1572433309"},
+                    {"field": "accountId", "value": "979326520502"},
+                    {"field": "interfaceId", "value": "eni-02e70b8e842c70a2f"},
+                    {"field": "bytes", "value": "3646"},
+                    {"field": "packets", "value": "16"},
                     {
                         "field": "@ptr",
-                        "value":
-                            "CloKIQodOTc5MzI2NTIwNTAyOlVTRWFzdDFfRmxvd0xvZ3MQBBI1GhgCBdlAMFMAAAAAg2XOMQAF25"
-                            "bRkAAAADIgASiwj8Li4S0wmPPN4uEtOChAsi1IrihQrSEQHhgB"
-                    }
+                        "value": "CloKIQodOTc5MzI2NTIwNTAyOlVTRWFzdDFfRmxvd0xvZ3MQBBI1GhgCBdlAMFMAAAAAg2XOMQAF25"
+                        "bRkAAAADIgASiwj8Li4S0wmPPN4uEtOChAsi1IrihQrSEQHhgB",
+                    },
                 ]
             ],
             "statistics": {
-                "bytesScanned": 7.1185346E7,
+                "bytesScanned": 7.1185346e7,
                 "recordsMatched": 254533.0,
-                "recordsScanned": 492595.0
+                "recordsScanned": 492595.0,
             },
-            "status": "Running"
+            "status": "Running",
         }
-        return json_response
 
 
 class MockExceptionResponse:
@@ -319,11 +246,11 @@ class TestAWSConnection(unittest.TestCase):
 
         mock_create_query.return_value = AWSMockJsonResponse()
         query = "{\"logType\": \"vpcflow\", \"limit\": 2, \"logGroupName\": \"USEast1_FlowLogs\", " \
-                "\"queryString\": \"fields @timestamp, " \
-                "srcAddr, dstAddr, srcPort, dstPort, protocol, start, end, accountId, interfaceId, bytes, packets | " \
-                "filter strlen(srcAddr) > 0 or strlen(dstAddr) > 0 or strlen(protocol) > 0 | " \
-                "filter ((srcAddr = '172.31.88.64' OR dstAddr = '172.31.88.64'))\", \"startTime\": 1569919390," \
-                " \"endTime\": 1577730600}"
+                    "\"queryString\": \"fields @timestamp, " \
+                    "srcAddr, dstAddr, srcPort, dstPort, protocol, start, end, accountId, interfaceId, bytes, packets | " \
+                    "filter strlen(srcAddr) > 0 or strlen(dstAddr) > 0 or strlen(protocol) > 0 | " \
+                    "filter ((srcAddr = '172.31.88.64' OR dstAddr = '172.31.88.64'))\", \"startTime\": 1569919390," \
+                    " \"endTime\": 1577730600}"
         transmission = stix_transmission.StixTransmission('aws_cloud_watch_logs', connection, config)
         query_response = transmission.query(query)
 
@@ -349,14 +276,14 @@ class TestAWSConnection(unittest.TestCase):
         connection = {
             "options": {"region": "xyz"}
         }
-        
+
         mock_create_query.return_value = AWSMockJsonResponse()
         query = "{\"logType\": \"vpcflow\", \"limit\": 10000, \"logGroupName\": \"USEast1_FlowLogs\", " \
-                "\"queryString\": \"fields @timestamp, " \
-                "srcAddr, dstAddr, srcPort, dstPort, protocol, start, end, accountId, interfaceId, bytes, packets | " \
-                "filter strlen(srcAddr) > 0 or strlen(dstAddr) > 0 or strlen(protocol) > 0 | " \
-                "filter ((srcAddr = '172.31.88.64' OR dstAddr = '172.31.88.64'))\", \"startTime\": 1569919390," \
-                " \"endTime\": 1577730600}"
+                    "\"queryString\": \"fields @timestamp, " \
+                    "srcAddr, dstAddr, srcPort, dstPort, protocol, start, end, accountId, interfaceId, bytes, packets | " \
+                    "filter strlen(srcAddr) > 0 or strlen(dstAddr) > 0 or strlen(protocol) > 0 | " \
+                    "filter ((srcAddr = '172.31.88.64' OR dstAddr = '172.31.88.64'))\", \"startTime\": 1569919390," \
+                    " \"endTime\": 1577730600}"
         transmission = stix_transmission.StixTransmission('aws_cloud_watch_logs', connection, iam_config)
         query_response = transmission.query(query)
 

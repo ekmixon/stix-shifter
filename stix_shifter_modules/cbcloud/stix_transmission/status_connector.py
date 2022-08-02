@@ -35,7 +35,7 @@ class StatusConnector(BaseStatusConnector):
         response_code = response.code
         response_text = response.read()
         error = None
-        response_dict = dict()
+        response_dict = {}
 
         try:
             response_dict = json.loads(response_text)
@@ -50,9 +50,7 @@ class StatusConnector(BaseStatusConnector):
         # return_obj['progress'] = Some progress code if returned from the API
 
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = False
-
+        return_obj = {'success': False}
         if response_dict and response_code == 200:
             completed = response_dict['completed']
             contacted = response_dict['contacted']

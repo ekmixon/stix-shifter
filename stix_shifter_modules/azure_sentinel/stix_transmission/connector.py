@@ -27,7 +27,7 @@ class Connector(BaseSyncConnector):
 
     def ping_connection(self):
         """Ping the endpoint."""
-        return_obj = dict()
+        return_obj = {}
         if self.init_error:
             self.logger.error("Token Generation Failed:")
             return self.adal_response
@@ -51,8 +51,8 @@ class Connector(BaseSyncConnector):
         :param offset: int,offset value
         :param length: int,length value"""
         response = None
-        response_dict = dict()
-        return_obj = dict()
+        response_dict = {}
+        return_obj = {}
         length = int(length)
         offset = int(offset)
 
@@ -67,7 +67,7 @@ class Connector(BaseSyncConnector):
             if length <= self.max_limit:
                 # $skip(offset) param not included as data source provides incorrect results for some of the queries
                 response = self.api_client.run_search(query, total_records)
-            elif length > self.max_limit:
+            else:
                 response = self.api_client.run_search(query, self.max_limit)
             response_code = response.code
             response_dict = json.loads(response.read())
@@ -115,11 +115,10 @@ class Connector(BaseSyncConnector):
                 ErrorResponder.fill_error(return_obj, response_dict, ['error', 'message'])
 
         except Exception as ex:
-            if response_dict is not None:
-                ErrorResponder.fill_error(return_obj, message='unexpected exception')
-                self.logger.error('can not parse response: ' + str(response_dict))
-            else:
+            if response_dict is None:
                 raise ex
+            ErrorResponder.fill_error(return_obj, message='unexpected exception')
+            self.logger.error(f'can not parse response: {str(response_dict)}')
         return return_obj
 
     @staticmethod
@@ -127,7 +126,7 @@ class Connector(BaseSyncConnector):
         """To generate the Token
         :param connection: dict, connection dict
         :param configuration: dict,config dict"""
-        return_obj = dict()
+        return_obj = {}
 
         authority_url = ('https://login.microsoftonline.com/' +
                          configuration['auth']['tenant'])

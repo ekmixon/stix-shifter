@@ -39,6 +39,6 @@ class ErrorMapper():
             error_code = error_mapping[code]
 
         if error_code == ErrorMapper.DEFAULT_ERROR:
-            ErrorMapper.logger.error("failed to map: " + str(json_data))
+            ErrorMapper.logger.error(f"failed to map: {str(json_data)}")
 
         ErrorMapperBase.set_error_code(return_obj, error_code)

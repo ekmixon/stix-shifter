@@ -46,10 +46,11 @@ def parse_raw_event_to_obj(event_type, raw_event_data):
 def _raw_event_str_to_obj(event_type, raw_event_data):
     event_values = raw_event_data.split('|')
     if event_type in str_event_fields:
-        event_obj = {}
-        for index, event_field in enumerate(str_event_fields[event_type]):
-            event_obj[event_field] = event_values[index]
-        return event_obj
+        return {
+            event_field: event_values[index]
+            for index, event_field in enumerate(str_event_fields[event_type])
+        }
+
     return None
 
 
@@ -62,7 +63,7 @@ def format_timestamp(timestamp):
     if not timestamp:
         return timestamp
     try:
-        return timestamp.isoformat() + 'Z'
+        return f'{timestamp.isoformat()}Z'
     except Exception:
         pass
     return timestamp
@@ -99,9 +100,7 @@ def get_timestamp_by_event_type(event_obj, event_type):
             timestamp = event_obj.get('timestamp')
             return datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif event_type == 'childproc':
-            # format: 2017-01-11T19:57:44.066000Z / 2017-01-11T19:57:44Z
-            action_type = event_obj.get('type')
-            if action_type:
+            if action_type := event_obj.get('type'):
                 timestamp = event_obj.get(action_type)
                 try:
                     return datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%SZ')
@@ -112,7 +111,10 @@ def get_timestamp_by_event_type(event_obj, event_type):
                 except ValueError:
                     pass
     except Exception as ex:
-        logger.warning('Failed to parse timestamp for {} event, skipping, {}'.format(event_type, str(ex)))
+        logger.warning(
+            f'Failed to parse timestamp for {event_type} event, skipping, {str(ex)}'
+        )
+
     return None
 
 
@@ -120,24 +122,24 @@ def is_timestamp_in_window(timestamp, time_window):
     try:
         return time_window[0] <= timestamp <= time_window[1]
     except Exception as ex:
-        logger.warning('Failed to check if timestamp in time_window, {}'.format(str(ex)))
+        logger.warning(f'Failed to check if timestamp in time_window, {str(ex)}')
         return False
 
 
 def get_common_fields_as_dict(cbr_process):
-    common_fields = {'device_os': cbr_process.get('os_type'),
-                     'device_name': cbr_process.get('hostname'),
-                     'host_type': cbr_process.get('host_type'),
-                     'process_pid': cbr_process.get('process_pid'),
-                     'process_name': cbr_process.get('process_name'),
-                     'parent_pid': cbr_process.get('parent_pid'),
-                     'parent_name': cbr_process.get('parent_name'),
-                     'process_cmdline': cbr_process.get('cmdline'),
-                     'interface_ip': cbr_process.get('interface_ip'),
-                     'device_external_ip': cbr_process.get('comms_ip'),
-                     'provider': CB_PROVIDER
-                     }
-    return common_fields
+    return {
+        'device_os': cbr_process.get('os_type'),
+        'device_name': cbr_process.get('hostname'),
+        'host_type': cbr_process.get('host_type'),
+        'process_pid': cbr_process.get('process_pid'),
+        'process_name': cbr_process.get('process_name'),
+        'parent_pid': cbr_process.get('parent_pid'),
+        'parent_name': cbr_process.get('parent_name'),
+        'process_cmdline': cbr_process.get('cmdline'),
+        'interface_ip': cbr_process.get('interface_ip'),
+        'device_external_ip': cbr_process.get('comms_ip'),
+        'provider': CB_PROVIDER,
+    }
 
 
 def create_regmod_obj(event_dict, event_type, cbr_event):
@@ -217,6 +219,6 @@ def create_event_obj(process, event):
         # in order to re-use "to_stix.json" mapping file.
         event_obj = create_event_obj_by_type[event_type](common_fields, event_type, event['parsed_event_data'])
     except Exception as ex:
-        logger.warning('Unsupported event {}, {}'.format(event_type, str(ex)))
+        logger.warning(f'Unsupported event {event_type}, {str(ex)}')
         return None
     return event_obj

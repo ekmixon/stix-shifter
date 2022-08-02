@@ -22,17 +22,17 @@ class ResultsConnector(BaseResultsConnector):
         :param length: str, length value
         :return: dict
         """
-        return_obj = dict()
+        return_obj = {}
         try:
             min_range = int(offset)
             max_range = int(length)
-            max_range = max_range if max_range <= MAX_LIMIT else MAX_LIMIT
+            max_range = min(max_range, MAX_LIMIT)
             search_id_length = len(search_id.split(':'))
             search_id_values = search_id.split(':')
-            if search_id_length in [2, 3]:
+            if search_id_length in {2, 3}:
                 search_session_id, user_session_id = search_id_values[0], search_id_values[1]
             else:
-                raise SyntaxError("Invalid search_id format : " + str(search_id))
+                raise SyntaxError(f"Invalid search_id format : {str(search_id)}")
 
             response = self.api_client.get_search_results(search_session_id, user_session_id, min_range, max_range)
             raw_response = response.read()
@@ -40,18 +40,16 @@ class ResultsConnector(BaseResultsConnector):
 
             if 199 < response_code < 300:
                 return_obj['success'] = True
-                response_dict = json.loads(raw_response)
-                if response_dict:
+                if response_dict := json.loads(raw_response):
                     final_response = list(map(lambda mapping: dict(zip(list(map(lambda schema: schema['name'],
                                                                                 response_dict['fields'])), mapping)),
                                               response_dict['results']))
-                    event_data = list()
+                    event_data = []
                     for log in final_response:
                         self.format_results(log, event_data)
                     return_obj['data'] = event_data
                 else:
                     return_obj['data'] = response_dict
-            # arcsight logger error codes - currently unavailable state
             elif response_code in [500, 503]:
                 response_string = raw_response.decode()
                 ErrorResponder.fill_error(return_obj, response_string, ['message'])
@@ -63,7 +61,7 @@ class ResultsConnector(BaseResultsConnector):
                 raise Exception(raw_response)
 
         except Exception as err:
-            return_obj = dict()
+            return_obj = {}
             response_error = err
             ErrorResponder.fill_error(return_obj, response_error, ['message'])
 
@@ -75,13 +73,9 @@ class ResultsConnector(BaseResultsConnector):
         :param log: dict
         :param event_data: list, results
         """
-        protocols = list()
-        default = 'unknown'
-        # building list of protocols
-        for protocol in PROTOCOLS_LIST:
-            if log.get(protocol):
-                protocols.append(log[protocol])
-        if protocols:
+        if protocols := [
+            log[protocol] for protocol in PROTOCOLS_LIST if log.get(protocol)
+        ]:
             log['protocols'] = protocols
 
         # formatting file hash values
@@ -94,6 +88,7 @@ class ResultsConnector(BaseResultsConnector):
 
         # default finding type for custom cybox object
         if not log.get('categorySignificance'):
+            default = 'unknown'
             log['categorySignificance'] = default
 
         # fetching  process id for linux based smart connectors
@@ -109,12 +104,12 @@ class ResultsConnector(BaseResultsConnector):
         :param log: dict
         :param event_data: list, results
         """
-        build_data = dict()
-        registry_connector = 'Sysmon'
+        build_data = {}
         # custom check for registry object creation
         if log.get('filePath'):
+            registry_connector = 'Sysmon'
             if log.get('deviceAction') and log.get('deviceProduct') == registry_connector and \
-                    log.get('deviceAction').__contains__("Registry"):
+                        log.get('deviceAction').__contains__("Registry"):
                 self.registry_format(log)
                 del log['filePath']
             # custom check for file object creation
@@ -124,10 +119,10 @@ class ResultsConnector(BaseResultsConnector):
         # custom check for network object creation
         if log.get('protocols') and (log.get('sourceAddress') or log.get('destinationAddress')):
             build_data['network_events'] = log
-            event_data.append(build_data)
         else:
             build_data['other_events'] = log
-            event_data.append(build_data)
+
+        event_data.append(build_data)
 
     @staticmethod
     def registry_format(log):
@@ -135,7 +130,7 @@ class ResultsConnector(BaseResultsConnector):
         Formatting registry values for Sysmon smart connector
         :param log: dict
         """
-        registry_data = dict()
+        registry_data = {}
         if log.get('deviceCustomString4'):
             registry_data['registry_string'] = log['deviceCustomString4']
         registry_data['name'] = log['filePath'].split('\\')[-1]
@@ -151,8 +146,8 @@ class ResultsConnector(BaseResultsConnector):
         pid_response = re.search(r'\spid=(\d+)', log['message'])
         ppid_response = re.search(r'ppid=(\d+)', log['message'])
         if pid_response:
-            log['dpid'] = pid_response.group(1)
+            log['dpid'] = pid_response[1]
             if log.get('spid'):
                 del log['spid']
         if ppid_response:
-            log['spid'] = ppid_response.group(1)
+            log['spid'] = ppid_response[1]

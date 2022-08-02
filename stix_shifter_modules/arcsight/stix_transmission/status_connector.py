@@ -46,7 +46,7 @@ class StatusConnector(BaseStatusConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
+        return_obj = {}
         limit = DEFAULT_LIMIT
         user_limit = None
         try:
@@ -57,7 +57,7 @@ class StatusConnector(BaseStatusConnector):
             elif search_id_length == 3:
                 search_session_id, user_session_id, user_limit = search_id_values
             else:
-                raise SyntaxError("Invalid search_id format : " + str(search_id))
+                raise SyntaxError(f"Invalid search_id format : {str(search_id)}")
 
             if user_limit and int(user_limit) <= DEFAULT_LIMIT:
                 limit = user_limit

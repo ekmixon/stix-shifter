@@ -55,10 +55,7 @@ class QueryStringPatternTranslator:
         :return: list
         """
         value_list = value.values
-        format_list = []
-        for item in value_list:
-            format_list.append('\'{}\''.format(item))
-        return format_list
+        return [f"\'{item}\'" for item in value_list]
 
     @staticmethod
     def _format_match(value) -> str:
@@ -68,7 +65,7 @@ class QueryStringPatternTranslator:
          :param value: str
          :return: str
          """
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _format_equality(value) -> str:
@@ -77,7 +74,7 @@ class QueryStringPatternTranslator:
           :param value: str
           :return: str
           """
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _format_like(value) -> str:
@@ -86,7 +83,7 @@ class QueryStringPatternTranslator:
         :param value: str
         :return: str
         """
-        return '\'{}\''.format(value)
+        return f"\'{value}\'"
 
     @staticmethod
     def _escape_value(value) -> str:
@@ -109,8 +106,7 @@ class QueryStringPatternTranslator:
         """
         values = []
         if isinstance(value, list):
-            for each in value:
-                values.append('{}'.format(each.replace('\'', '')))
+            values.extend('{}'.format(each.replace('\'', '')) for each in value)
             value = values
         else:
             value = value.replace('\'', '')
@@ -125,8 +121,7 @@ class QueryStringPatternTranslator:
         """
         values = []
         if isinstance(value, list):
-            for each in value:
-                values.append('{}'.format(each).lower())
+            values.extend(f'{each}'.lower() for each in value)
             value = values
         else:
             value = value.lower()
@@ -168,18 +163,18 @@ class QueryStringPatternTranslator:
                 elif mapped_field in ['fileStates.fileHash.hashValue', 'processes.fileHash.hashValue']:
                     hash_string = 'fileHash/hashType'
                     hash_type = stix_field.split('.')[1] if mapped_field == 'fileStates.fileHash.hashValue' else \
-                        stix_field.split('.')[2]
+                            stix_field.split('.')[2]
                     comparison_string += "({collection_name}/any({fn}:{fn}/{hash_string} {comparator} '{value}')" \
-                        .format(collection_name=collection_name, fn=lambda_func, hash_string=hash_string,
+                            .format(collection_name=collection_name, fn=lambda_func, hash_string=hash_string,
                                 comparator='eq', value=hash_type.lower().replace('-', ''))
                     if comparator == 'contains':
                         comparison_string += " and {collection_name}/any({fn}:{comparator}({attribute_expression}, " \
-                                             "{value})))".format(collection_name=collection_name, fn=lambda_func,
+                                                 "{value})))".format(collection_name=collection_name, fn=lambda_func,
                                                                  attribute_expression=attribute_expression,
                                                                  comparator=comparator, value=value)
                     else:
                         comparison_string += " and {collection_name}/any({fn}:{attribute_expression} {comparator} " \
-                                             "{value}))".format(collection_name=collection_name, fn=lambda_func,
+                                                 "{value}))".format(collection_name=collection_name, fn=lambda_func,
                                                                 attribute_expression=attribute_expression,
                                                                 comparator=comparator,
                                                                 value=value)
@@ -198,13 +193,13 @@ class QueryStringPatternTranslator:
                 else:
                     if comparator == 'contains':
                         comparison_string += "{collection_name}/any({fn}:{comparator}({attribute_expression}, " \
-                                             "{value}))" \
-                            .format(collection_name=collection_name, fn=lambda_func,
+                                                 "{value}))" \
+                                .format(collection_name=collection_name, fn=lambda_func,
                                     attribute_expression=attribute_expression,
                                     comparator=comparator, value=value)
                     else:
                         comparison_string += "{collection_name}/any({fn}:{attribute_expression} {comparator} {value})" \
-                            .format(collection_name=collection_name, fn=lambda_func,
+                                .format(collection_name=collection_name, fn=lambda_func,
                                     attribute_expression=attribute_expression,
                                     comparator=comparator, value=value)
             else:
@@ -219,7 +214,7 @@ class QueryStringPatternTranslator:
 
         # loop for custom logic to form IN operator related query
         for mapped_field in mapped_fields_array:
-            lambda_func = 'query' + str(counter)
+            lambda_func = f'query{str(counter)}'
 
             # for In operator, loop the format comparision string for each values in the list.
             if expression.comparator == ComparisonComparators.In:
@@ -228,27 +223,22 @@ class QueryStringPatternTranslator:
                     for value in values:
                         comparison_string = format_comparision_string(comparison_string, mapped_field, lambda_func)
                         if values_count > 1:
-                            if expression.negated:
-                                comparison_string += " and "
-                            else:
-                                comparison_string += " or "
+                            comparison_string += " and " if expression.negated else " or "
                             values_count -= 1
-            # to form queries other than IN operator
             else:
                 comparison_string = format_comparision_string(comparison_string, mapped_field, lambda_func)
 
             if mapped_fields_count > 1:
-                if expression.negated:
-                    comparison_string += " and "
-                else:
-                    comparison_string += " or "
+                comparison_string += " and " if expression.negated else " or "
                 mapped_fields_count -= 1
         return comparison_string
 
     def _lookup_comparison_operator(self, expression_operator):
         if expression_operator not in self.comparator_lookup:
             raise NotImplementedError(
-                "Comparison operator {} unsupported for Azure Sentinel adapter".format(expression_operator.name))
+                f"Comparison operator {expression_operator.name} unsupported for Azure Sentinel adapter"
+            )
+
         return self.comparator_lookup[expression_operator]
 
     @staticmethod
@@ -298,18 +288,18 @@ class QueryStringPatternTranslator:
             # Some values are formatted differently based on how they're being compared
             if expression.comparator == ComparisonComparators.Matches:  # needs forward slashes
                 value = self._format_match(expression.value)
-            # should be (x, y, z, ...)
             elif expression.comparator == ComparisonComparators.In:
                 value = self._format_set(expression.value)
-            elif expression.comparator == ComparisonComparators.Equal \
-                    or expression.comparator == ComparisonComparators.NotEqual \
-                    or expression.comparator == ComparisonComparators.GreaterThan \
-                    or expression.comparator == ComparisonComparators.LessThan \
-                    or expression.comparator == ComparisonComparators.GreaterThanOrEqual \
-                    or expression.comparator == ComparisonComparators.LessThanOrEqual:
+            elif expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+                ComparisonComparators.GreaterThan,
+                ComparisonComparators.LessThan,
+                ComparisonComparators.GreaterThanOrEqual,
+                ComparisonComparators.LessThanOrEqual,
+            ]:
                 # Should be in single-quotes
                 value = self._format_equality(expression.value)
-            # '%' -> '*' wildcard, '_' -> '?' single wildcard
             elif expression.comparator == ComparisonComparators.Like:
                 value = self._format_like(expression.value)
             else:
@@ -341,10 +331,10 @@ class QueryStringPatternTranslator:
 
             if len(mapped_fields_array) > 1:
                 # More than one data source field maps to the STIX attribute, so group comparisons together.
-                grouped_comparison_string = "(" + comparison_string + ")"
+                grouped_comparison_string = f"({comparison_string})"
                 comparison_string = grouped_comparison_string
 
-            return "{}".format(comparison_string)
+            return f"{comparison_string}"
 
         elif isinstance(expression, CombinedComparisonExpression):
             operator = self._lookup_comparison_operator(expression.operator)
@@ -353,15 +343,15 @@ class QueryStringPatternTranslator:
             if not expression_01 or not expression_02:
                 return ''
             if isinstance(expression.expr1, CombinedComparisonExpression):
-                expression_01 = "({})".format(expression_01)
+                expression_01 = f"({expression_01})"
             if isinstance(expression.expr2, CombinedComparisonExpression):
-                expression_02 = "({})".format(expression_02)
-            query_string = "{} {} {}".format(expression_01, operator, expression_02)
-            return "{}".format(query_string)
+                expression_02 = f"({expression_02})"
+            query_string = f"{expression_01} {operator} {expression_02}"
+            return f"{query_string}"
         elif isinstance(expression, ObservationExpression):
             parse_string = self._parse_expression(expression.comparison_expression)
             time_string = self._parse_time_range(qualifier, self._time_range)
-            sentinel_query = "({}) and ({})".format(parse_string, time_string)
+            sentinel_query = f"({parse_string}) and ({time_string})"
             self.final_query_list.append(sentinel_query)
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
             if isinstance(expression.observation_expression, CombinedObservationExpression):
@@ -371,7 +361,7 @@ class QueryStringPatternTranslator:
                 parse_string = self._parse_expression(expression.observation_expression.comparison_expression,
                                                       expression.qualifier)
                 time_string = self._parse_time_range(expression.qualifier, self._time_range)
-                sentinel_query = "({}) and ({})".format(parse_string, time_string)
+                sentinel_query = f"({parse_string}) and ({time_string})"
                 self.final_query_list.append(sentinel_query)
         elif isinstance(expression, CombinedObservationExpression):
             self._parse_expression(expression.expr1, qualifier)
@@ -379,8 +369,9 @@ class QueryStringPatternTranslator:
         elif isinstance(expression, Pattern):
             return "{expr}".format(expr=self._parse_expression(expression.expression))
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         """
@@ -403,5 +394,4 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options):
     time_range = options['time_range']
     query = QueryStringPatternTranslator(pattern, data_model_mapping, time_range)
 
-    translated_query = query.final_query_list
-    return translated_query
+    return query.final_query_list

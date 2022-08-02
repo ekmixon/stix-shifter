@@ -63,7 +63,7 @@ class TestQueryTranslator(unittest.TestCase):
     def test_unmapped_attribute_handling(self):
         test_options = {"time_range": None} 
         stix_pattern = "[file:hashes.MD5 = '2f50b945d2a6554c1031a744764a0fe2' OR obj_unmp:unmapped = 'scanhost.exe']"
-        
+
         query = translation.translate(MODULE, 'query', '{}', stix_pattern, options=test_options)
         queries = ['(process_hash:2f50b945d2a6554c1031a744764a0fe2) AND -enriched:True']
         self._test_query_assertions(query, queries)

@@ -37,7 +37,7 @@ class StatusConnector(BaseStatusConnector):
         response_dict = json.loads(response.read())
 
         # Construct a response object
-        return_obj = dict()
+        return_obj = {}
         response_code = 200
         if response_code == 200:
             return_obj['success'] = True

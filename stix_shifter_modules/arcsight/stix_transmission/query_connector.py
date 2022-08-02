@@ -15,7 +15,7 @@ class QueryConnector(BaseQueryConnector):
         try:
             return_obj = self.api_client.create_search(query)
         except Exception as err:
-            return_obj = dict()
+            return_obj = {}
             response_error = err
             ErrorResponder.fill_error(return_obj, response_error, ['message'])
         return return_obj

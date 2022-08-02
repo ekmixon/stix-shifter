@@ -245,7 +245,7 @@ class TestBigFixResultsToStix(unittest.TestCase):
         assert ('objects' in observed_data)
         objects = observed_data['objects']
         assert (objects != {})
-        
+
         curr_obj = TestBigFixResultsToStix.get_first_of_type(objects.values(), 'process')
         assert (curr_obj is not None), 'process object type not found'
 
@@ -273,7 +273,7 @@ class TestBigFixResultsToStix(unittest.TestCase):
             data_source, map_data, [data], get_module_transformers(MODULE), options)
         assert result_bundle['type'] == 'bundle'
         result_bundle_objects = result_bundle['objects']
-        
+
         result_bundle_identity = result_bundle_objects[0]
         assert result_bundle_identity['type'] == data_source['type']
         assert result_bundle_identity['id'] == data_source['id']

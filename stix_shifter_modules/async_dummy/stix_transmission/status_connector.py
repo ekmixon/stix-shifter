@@ -41,7 +41,7 @@ class StatusConnector(BaseStatusConnector):
             # return_obj['progress'] = Some progress code if returned from the API
             # Construct a response object
             response_code = response_dict["code"]
-            return_obj = dict()
+            return_obj = {}
 
             if response_code == 200:
                 return_obj['success'] = True
@@ -51,5 +51,5 @@ class StatusConnector(BaseStatusConnector):
                 ErrorResponder.fill_error(return_obj, response_dict, ['message'])
             return return_obj
         except Exception as err:
-            self.logger.error('error when getting search status: {}'.format(err))
+            self.logger.error(f'error when getting search status: {err}')
             raise

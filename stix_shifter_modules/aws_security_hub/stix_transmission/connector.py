@@ -24,10 +24,7 @@ class Connector(BaseSyncConnector):
                               aws_secret_access_key=self.configuration['aws_secret_access_key']
                               )
 
-        filters = None
-        if query_id != '':
-            filters = loads(query_id)
-
+        filters = loads(query_id) if query_id != '' else None
         findings = client.get_findings(Filters=filters)
         self.results = findings['Findings']
 

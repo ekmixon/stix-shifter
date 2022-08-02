@@ -12,7 +12,7 @@ class PingConnector(BasePingConnector):
         Ping the endpoint
         :return: dict
         """
-        return_obj = dict()
+        return_obj = {}
 
         try:
             response = self.api_client.ping_data_source()
@@ -33,7 +33,7 @@ class PingConnector(BasePingConnector):
                 raise Exception(raw_response)
 
         except Exception as err:
-            return_obj = dict()
+            return_obj = {}
             response_error_ping = err
             ErrorResponder.fill_error(return_obj, response_error_ping, ['message'])
 

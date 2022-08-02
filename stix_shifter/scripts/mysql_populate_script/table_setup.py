@@ -31,7 +31,7 @@ class TableSetup():
         try:
             cnx = self.__get_db_connection()
             cursor = cnx.cursor()
-            sql = "DROP TABLE IF EXISTS {}".format(self.table)
+            sql = f"DROP TABLE IF EXISTS {self.table}"
             cursor.execute(sql)
         except mysql.connector.Error as err:
             self.__handle_error(err)
@@ -49,11 +49,11 @@ class TableSetup():
 
             fields_and_type = "("
             for index, field in enumerate(self.fields_list):
-                fields_and_type += "{} {}, ".format(field, self.data_types_list[index])
+                fields_and_type += f"{field} {self.data_types_list[index]}, "
             fields_and_type = fields_and_type[:-2]
             fields_and_type += ")"
-            print("Creating table with the following fields: {}".format(self.fields_list))
-            sql = "CREATE TABLE {} {};".format(self.table, fields_and_type)
+            print(f"Creating table with the following fields: {self.fields_list}")
+            sql = f"CREATE TABLE {self.table} {fields_and_type};"
             cursor.execute(sql)
         except mysql.connector.Error as err:
             self.__handle_error(err)
@@ -69,7 +69,8 @@ class TableSetup():
             for index, row in enumerate(self.csv_rows):
                 if index < 2:
                     continue
-                sql = "INSERT INTO {} ({}) VALUES ({})".format(self.table, ", ".join(self.fields_list), sql_insert_parameters)
+                sql = f'INSERT INTO {self.table} ({", ".join(self.fields_list)}) VALUES ({sql_insert_parameters})'
+
                 value_tuple = tuple(row)
                 cursor.execute(sql, value_tuple)
                 cnx.commit()

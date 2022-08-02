@@ -83,23 +83,27 @@ class QueryStringPatternTranslator:
 
     @staticmethod
     def _format_equality(value) -> str:
-        return '{}'.format(value)
+        return f'{value}'
 
     @staticmethod
     def _format_like(value) -> str:
-        return "{}".format(value)
+        return f"{value}"
 
     @staticmethod
     def _check_value_type(value):
         value = str(value)
-        for key, pattern in observable.REGEX.items():
-            if key != 'date' and bool(re.search(pattern, value)):
-                return key
-        return None
+        return next(
+            (
+                key
+                for key, pattern in observable.REGEX.items()
+                if key != 'date' and bool(re.search(pattern, value))
+            ),
+            None,
+        )
 
     @staticmethod
     def _parse_reference(value_type, mapped_field, value, comparator):
-        if value_type not in REFERENCE_DATA_TYPES["{}".format(mapped_field)]:
+        if value_type not in REFERENCE_DATA_TYPES[f"{mapped_field}"]:
             return None
         else:
             return "{mapped_field}{comparator}{value}".format(
@@ -117,10 +121,13 @@ class QueryStringPatternTranslator:
         updated_field = mapped_field
         if self.dialect == 'tideDbData':
             if mapped_field == 'imported':
-                updated_field = 'imported' + comparator_suffix_map[comparator]
+                updated_field = f'imported{comparator_suffix_map[comparator]}'
             elif comparator == ComparisonComparators.Like:
                 if mapped_field not in ['profile', 'origin', 'host', 'ip', 'url', 'domain', 'property', 'class', 'target']:
-                    raise NotImplementedError("Comparison operator {} unsupported for Infoblox connector {} field {}".format(comparator.name, self.dialect, mapped_field))
+                    raise NotImplementedError(
+                        f"Comparison operator {comparator.name} unsupported for Infoblox connector {self.dialect} field {mapped_field}"
+                    )
+
                 updated_field = 'text_search'
         return updated_field
 
@@ -145,10 +152,10 @@ class QueryStringPatternTranslator:
             mapped_field = self._sanatize_field(mapped_field, expression.comparator)
             value = self._sanatize_value(mapped_field, value)
             if is_reference_value:
-                parsed_reference = self._parse_reference(value_type, mapped_field, value, comparator)
-                if not parsed_reference:
-                    continue
-                comparison_string += parsed_reference
+                if parsed_reference := self._parse_reference(
+                    value_type, mapped_field, value, comparator
+                ):
+                    comparison_string += parsed_reference
             else:
                 comparison_string += "{mapped_field}{comparator}{value}".format(mapped_field=mapped_field, comparator=comparator, value=value)
 
@@ -160,16 +167,21 @@ class QueryStringPatternTranslator:
 
     def _lookup_comparison_operator(self, expression_operator):
         if expression_operator not in self.comparator_lookup[self.dialect]:
-            raise NotImplementedError("Comparison operator {} unsupported for Infoblox connector {}".format(expression_operator.name, self.dialect))
+            raise NotImplementedError(
+                f"Comparison operator {expression_operator.name} unsupported for Infoblox connector {self.dialect}"
+            )
+
 
         return self.comparator_lookup[self.dialect][expression_operator]
 
     def _calculate_intersection(self, mapped_fields_array, stix_field, assigned_fields):
         mapped_fields_set = set(mapped_fields_array)
         assigned_fields_set = set(assigned_fields.keys())
-        intersection = assigned_fields_set.intersection(mapped_fields_set)
-        if intersection:
-            raise DuplicateFieldException("Multiple criteria for one field is not support in Infoblox connector, field={}, duplicates={}".format(', '.join(intersection), stix_field))
+        if intersection := assigned_fields_set.intersection(mapped_fields_set):
+            raise DuplicateFieldException(
+                f"Multiple criteria for one field is not support in Infoblox connector, field={', '.join(intersection)}, duplicates={stix_field}"
+            )
+
 
         if self.dialect == 'tideDbData' and stix_field == 'imported':
             # for TIDE imported date field, allow multiple criteria
@@ -233,7 +245,10 @@ class QueryStringPatternTranslator:
         return
 
     def _merge_queries_in_expression(self, expression_01, expression_02, operator):
-        assert not (len(expression_01) > 1 and len(expression_02) > 1), "Failed to merge queries, expressions too complex"
+        assert (
+            len(expression_01) <= 1 or len(expression_02) <= 1
+        ), "Failed to merge queries, expressions too complex"
+
 
         expression_small = expression_01 if len(expression_01) == 1 else expression_02
         expression_large = expression_02 if expression_small == expression_01 else expression_01
@@ -242,12 +257,12 @@ class QueryStringPatternTranslator:
         threat_type_array = [i['threatType'] for i in (expression_01 + expression_02) if i['threatType']]
         threat_type_set = set(threat_type_array)
         if len(threat_type_set) > 1:
-            raise RuntimeError("Conflicting threat_type found, {}".format(sorted(threat_type_set)))
+            raise RuntimeError(f"Conflicting threat_type found, {sorted(threat_type_set)}")
 
         for query in expression_large:
             merging_expression = expression_small[0]
             query['query'] = operator.join([merging_expression['query'], query['query']])
-            query['threatType'] = merging_expression['threatType'] if merging_expression['threatType'] else query['threatType']
+            query['threatType'] = merging_expression['threatType'] or query['threatType']
 
         return expression_large
 
@@ -262,7 +277,7 @@ class QueryStringPatternTranslator:
             if intersection_fields is not None:
                 self._calculate_intersection(mapped_fields_array, stix_field, intersection_fields)
             else:
-                assigned_fields = dict()
+                assigned_fields = {}
                 self._calculate_intersection(mapped_fields_array, stix_field, assigned_fields)
 
             # Resolve the comparison symbol to use in the query string (usually just ':')
@@ -283,26 +298,26 @@ class QueryStringPatternTranslator:
 
             # NOTE: APIs do not support duplicate criteria (example domain-name=d1.com AND domain-name=d2.com). As a workaround, the expression
             #   will be split into multiple independent queries.
-            exp1_fields = dict()
+            exp1_fields = {}
             use_two_queries = True
             try:
                 # Process LHS of expression, intersections here is an invalid query, stop processing.
                 expression_01 = self._parse_expression(expression.expr1, qualifier, exp1_fields)
             except DuplicateFieldException as error:
                 logger.error("%s", error)
-                raise NotImplementedError("{}".format(error))
+                raise NotImplementedError(f"{error}")
 
             try:
                 # Process RHS of expression, if intersections are found re-attempt parsing but as two separate queries.
                 expression_02 = self._parse_expression(expression.expr2, qualifier, exp1_fields)
             except DuplicateFieldException as error:
                 try:
-                    exp2_fields = dict()
+                    exp2_fields = {}
                     expression_02 = self._parse_expression(expression.expr2, qualifier, exp2_fields)
                     use_two_queries = False
                 except DuplicateFieldException as error:
                     logger.error("%s", error)
-                    raise NotImplementedError("{}".format(error))
+                    raise NotImplementedError(f"{error}")
 
             assert expression_01 and expression_02, "Failed to parse one side of the expression"
 
@@ -318,8 +333,8 @@ class QueryStringPatternTranslator:
         elif isinstance(expression, StartStopQualifier) and hasattr(expression, 'observation_expression'):
             return self._parse_expression(getattr(expression, 'observation_expression'), expression.qualifier, intersection_fields)
         elif isinstance(expression, CombinedObservationExpression):
-            exp1_fields = dict()
-            exp2_fields = dict()
+            exp1_fields = {}
+            exp2_fields = {}
             expression_01 = self._parse_expression(expression.expr1, qualifier, exp1_fields)
             expression_02 = self._parse_expression(expression.expr2, qualifier, exp2_fields)
 
@@ -329,8 +344,9 @@ class QueryStringPatternTranslator:
             result = self._parse_expression(expression.expression)
             return result
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def parse_expression(self, pattern: Pattern):
         return self._parse_expression(pattern)
@@ -374,12 +390,12 @@ def _format_query_with_timestamp(dialect:str, query: str, time_range, start_stop
             second_start_time = transformer.transform(start_time)
             second_stop_time = transformer.transform(stop_time)
 
-            return 't0={}&t1={}&{}'.format(str(second_start_time), str(second_stop_time), query)
+            return f't0={str(second_start_time)}&t1={str(second_stop_time)}&{query}'
 
         # default to last X minutes
         totime = int(time.time())
         fromtime = int(totime - datetime.timedelta(minutes=time_range).total_seconds())
-        return 't0={}&t1={}&{}'.format(str(fromtime), str(totime), query)
+        return f't0={fromtime}&t1={totime}&{query}'
 
     if dialect == 'tideDbData':
         if start_stop_time and _test_start_stop_format(start_stop_time):
@@ -393,11 +409,11 @@ def _format_query_with_timestamp(dialect:str, query: str, time_range, start_stop
             second_start_time = transformer.transform(start_time)
             second_stop_time = transformer.transform(stop_time)
 
-            return 'from_date={}&to_date={}&{}'.format(start_time, stop_time, query)
+            return f'from_date={start_time}&to_date={stop_time}&{query}'
 
         if any(substring in query for substring in ['imported', 'expiration']):
             return query
-        return 'period={} minutes&{}'.format(time_range, query)
+        return f'period={time_range} minutes&{query}'
 
     return query
 
@@ -413,10 +429,7 @@ def _format_translated_queries(dialect, entry_array, time_range):
             continue
         query = _format_query_with_timestamp(dialect, query, time_range, entry['startStopTime'])
 
-        payload = dict()
-        payload['offset'] = 0
-        payload['query'] = query
-
+        payload = {'offset': 0, 'query': query}
         if 'threatType' in entry:
             payload['threat_type'] = entry['threatType']
 

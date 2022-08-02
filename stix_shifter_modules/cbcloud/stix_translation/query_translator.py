@@ -27,8 +27,6 @@ class QueryTranslator(BaseQueryTranslator):
 
         LOGGER.info("Converting STIX2 Pattern to Carbon Black Cloud query")
 
-        query_string = query_constructor.translate_pattern(
+        return query_constructor.translate_pattern(
             antlr_parsing_object, self, self.options
         )
-
-        return query_string

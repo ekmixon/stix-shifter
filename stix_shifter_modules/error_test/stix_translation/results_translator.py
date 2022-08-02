@@ -14,13 +14,14 @@ class ResultsTranslator(BaseResultTranslator):
         error_type = self.options.get('error_type')
         if self.options.get('error_type') == ERROR_TYPE_TRANSLATE_EXCEPTION:
             raise TranslationResultException("Test exception in translate_results")
-        
+
         # Wrap data in a STIX bundle and insert the data_source identity object as the first object
         bundle = {
             "type": "bundle",
-            "id": "bundle--" + str(uuid.uuid4()),
-            "objects": []
+            "id": f"bundle--{str(uuid.uuid4())}",
+            "objects": [],
         }
+
 
         data_source = json.loads(data_source)
         bundle['objects'] += [data_source]

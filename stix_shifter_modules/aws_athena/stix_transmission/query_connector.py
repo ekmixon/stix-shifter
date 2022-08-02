@@ -29,27 +29,41 @@ class QueryConnector(BaseQueryConnector):
         :param query: dict, Query
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             if not isinstance(query, dict):
                 query = json.loads(query)
             query_service_type = list(query.keys())[0]
             config_details = service_types[query_service_type]
-            if all([True if config not in self.connection.keys() else False for config in config_details]):
-                return_obj = {'success': True, 'search_id': str(uuid.uuid4()) + '-dummy:' + query_service_type}
+            if all(
+                config not in self.connection.keys() for config in config_details
+            ):
+                return_obj = {
+                    'success': True,
+                    'search_id': f'{str(uuid.uuid4())}-dummy:{query_service_type}',
+                }
+
                 return return_obj
             for config in config_details:
                 if config not in self.connection.keys():
-                    raise InvalidParameterException("{} is required for {} query operation".format(config,
-                                                                                                   query_service_type))
-            table_config = self.connection[config_details[0]] + "." + self.connection[config_details[1]]
-            select_statement = "SELECT * FROM %s WHERE " % (table_config)
+                    raise InvalidParameterException(
+                        f"{config} is required for {query_service_type} query operation"
+                    )
+
+            table_config = f"{self.connection[config_details[0]]}.{self.connection[config_details[1]]}"
+
+            select_statement = f"SELECT * FROM {table_config} WHERE "
             # for multiple observation operators union and intersect, select statement will be added
             if 'UNION' in query[query_service_type] or 'INTERSECT' in query[query_service_type]:
-                query_string = re.sub(r'\(\(', '(({}'.format(select_statement), query[query_service_type], 1)
-                query = query_string.replace('UNION (', 'UNION ({}'.format(select_statement)).\
-                    replace('INTERSECT (', 'INTERSECT ({}'.format(select_statement))
+                query_string = re.sub(
+                    r'\(\(', f'(({select_statement}', query[query_service_type], 1
+                )
+
+                query = query_string.replace(
+                    'UNION (', f'UNION ({select_statement}'
+                ).replace('INTERSECT (', f'INTERSECT ({select_statement}')
+
             else:
                 query = select_statement + query[query_service_type]
             result_config = self.get_result_config()
@@ -77,9 +91,8 @@ class QueryConnector(BaseQueryConnector):
             split_path = path.split('s3', 1)[1]
             for i, char in enumerate(split_path):
                 if char.isalnum():
-                    output_location = 's3://' + split_path[i:]
+                    output_location = f's3://{split_path[i:]}'
                     break
         else:
-            output_location = 's3://' + path
-        result_config = {'OutputLocation': output_location}
-        return result_config
+            output_location = f's3://{path}'
+        return {'OutputLocation': output_location}

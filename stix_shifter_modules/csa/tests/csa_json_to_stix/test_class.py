@@ -80,36 +80,45 @@ class TestTransform(object):
 
         # Test that each data element is properly mapped and input into the STIX JSON
         for key, value in objects.items():
-            assert(int(key) in list(range(0, len(objects))))
+            assert int(key) in list(range(len(objects)))
             # Todo: handle case where there is both a source and destination ip, there will be more than one ipv4-addr
-            if(value['type'] == 'ipv4-addr'):
+            if (value['type'] == 'ipv4-addr'):
                 # assert(
                 #     value['value'] == source_ip), "Wrong value returned " + key + ":" + str(value)
-                assert(True)
+                pass
             elif(value['type'] == 'url'):
                 assert(value['value'] == url), "Wrong value returned " + \
-                    key + ":" + str(value)
-            elif(value['type'] == 'domain-name'):
-                assert(
-                    value['value'] == domain), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'artifact'):
-                assert(
-                    value['payload_bin'] == payload), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'user-account'):
-                assert(
-                    value['user_id'] == user_id), "Wrong value returned " + key + ":" + str(value)
-            # Todo: should not be returned since the address passed in isn't ipv6, still needs to be fixed in logic
-            elif(value['type'] == 'ipv6-addr'):
+                        key + ":" + str(value)
+            elif value['type'] == 'domain-name':
+                assert (
+                    value['value'] == domain
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'artifact':
+                assert (
+                    value['payload_bin'] == payload
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'user-account':
+                assert (
+                    value['user_id'] == user_id
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'ipv6-addr':
                 # assert(
                 #     value['value'] == source_ip), "Wrong value returned " + key + ":" + str(value)
-                assert(True)
-            elif(value['type'] == 'network-traffic'):
-                assert(int(value['src_ref']) in list(
-                    range(0, len(objects)))), "Wrong value returned " + key + ":" + str(value)
+                pass
+            elif value['type'] == 'network-traffic':
+                assert int(value['src_ref']) in list(
+                    range(len(objects))
+                ), f"Wrong value returned {key}:{str(value)}"
+
                 assert(type(value['src_ref'])
                        is str), "Reference value should be a string"
-                assert(int(value['dst_ref']) in list(
-                    range(0, len(objects)))), "Wrong value returned " + key + ":" + str(value)
+                assert int(value['dst_ref']) in list(
+                    range(len(objects))
+                ), f"Wrong value returned {key}:{str(value)}"
+
                 assert(type(value['dst_ref'])
                        is str), "Reference value should be a string"
                 assert(value['protocols'] == ['tcp'])
@@ -117,7 +126,7 @@ class TestTransform(object):
                 assert(value['dst_port'] == 2000)
             else:
                 assert(False), "Returned a non-mapped value " + \
-                    key + ":" + str(value)
+                        key + ":" + str(value)
 
     # def test_custom_props(self):
     #     transformer = None
@@ -189,34 +198,47 @@ class TestTransform(object):
 
         # Test that each data element is properly mapped and input into the STIX JSON
         for key, value in objects.items():
-            assert(int(key) in list(range(0, len(objects))))
-            if(value['type'] == 'initiator_credential_type'):
-                assert(value['value'] == initc), "Wrong value returned " + key + ":" + str(value)
-                assert(True)
+            assert int(key) in list(range(len(objects)))
+            if (value['type'] == 'initiator_credential_type'):
+                assert (value['value'] == initc), f"Wrong value returned {key}:{str(value)}"
             elif(value['type'] == 'initiator_name'):
                 assert(value['value'] == initn), "Wrong value returned " + \
-                    key + ":" + str(value)
-            elif(value['type'] == 'initiator_id'):
-                assert(
-                    value['value'] == initi), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'ALCH_ACCOUNT_ID'):
-                assert(
-                    value['value'] == alcha), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'message'):
-                assert(
-                    value['value'] == messa), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'event_uuid'):
-                assert(
-                    value['value'] == event), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'ALCH_TENANT_ID'):
-                assert(
-                    value['value'] == alcht), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'action'):
-                assert(
-                    value['value'] == actio), "Wrong value returned " + key + ":" + str(value)
-            elif(value['type'] == 'eventTime'):
-                assert(
-                    value['value'] == isoti), "Wrong value returned " + key + ":" + str(value)
+                        key + ":" + str(value)
+            elif value['type'] == 'initiator_id':
+                assert (
+                    value['value'] == initi
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'ALCH_ACCOUNT_ID':
+                assert (
+                    value['value'] == alcha
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'message':
+                assert (
+                    value['value'] == messa
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'event_uuid':
+                assert (
+                    value['value'] == event
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'ALCH_TENANT_ID':
+                assert (
+                    value['value'] == alcht
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'action':
+                assert (
+                    value['value'] == actio
+                ), f"Wrong value returned {key}:{str(value)}"
+
+            elif value['type'] == 'eventTime':
+                assert (
+                    value['value'] == isoti
+                ), f"Wrong value returned {key}:{str(value)}"
+
             else:
                 assert(False), "Returned a non-mapped value " + \
-                    key + ":" + str(value)
+                        key + ":" + str(value)

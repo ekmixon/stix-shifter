@@ -19,7 +19,7 @@ class ResultsConnector(BaseResultsConnector):
             response_dict = json.loads(response.read())
 
             # # Construct a response object
-            return_obj = dict()
+            return_obj = {}
 
             if 200 <= response_code < 300:
                 return_obj['success'] = True
@@ -29,7 +29,7 @@ class ResultsConnector(BaseResultsConnector):
             return return_obj
 
         except Exception as err:
-            self.logger.error('error when getting search results: {}'.format(err))
+            self.logger.error(f'error when getting search results: {err}')
             import traceback
             self.logger.error(traceback.print_stack())
             raise

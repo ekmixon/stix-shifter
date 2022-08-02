@@ -20,9 +20,7 @@ class AdalMockResponse:
 
     @staticmethod
     def acquire_token_with_client_credentials(resource, client_id, client_secret):
-        context_response = dict()
-        context_response['accessToken'] = 'abc12345'
-        return context_response
+        return {'accessToken': 'abc12345'}
 
 
 @patch('stix_shifter_modules.azure_sentinel.stix_transmission.connector.adal.AuthenticationContext')
@@ -58,8 +56,8 @@ class TestAzureSentinalConnection(unittest.TestCase):
         mocked_return_value = '["mock", "placeholder"]'
 
         mock_ping_response.return_value = AzureSentinelMockResponse(200, mocked_return_value)
-        print(str(self.connection))
-        print(str(self.config))
+        print(self.connection)
+        print(self.config)
         transmission = stix_transmission.StixTransmission('azure_sentinel', self.connection(), self.config())
         ping_response = transmission.ping()
 
@@ -94,7 +92,7 @@ class TestAzureSentinalConnection(unittest.TestCase):
         mock_generate_token.return_value = AdalMockResponse
 
         query = "fileStates/any(a:a/path eq 'c:\\windows\\system32\\services.exe') and eventDateTime ge " \
-                "2019-10-13T08:00Z and eventDateTime le 2019-11-13T08:00Z"
+                    "2019-10-13T08:00Z and eventDateTime le 2019-11-13T08:00Z"
         transmission = stix_transmission.StixTransmission('azure_sentinel', self.connection(), self.config())
         query_response = transmission.query(query)
 

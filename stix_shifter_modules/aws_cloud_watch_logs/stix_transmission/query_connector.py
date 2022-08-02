@@ -22,17 +22,15 @@ class QueryConnector(BaseQueryConnector):
         :param query: str, Query
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             query = json.loads(query)
             log_type = query['logType']
             limit = query['limit']
-            # add service specific loggroups to query if service logtype present
-            # else loggroups in default type adds to query
-            log_groups = self.log_group_names.get(log_type) if self.log_group_names.get(log_type) else \
-                self.log_group_names.get('default')
-            if log_groups:
+            if log_groups := self.log_group_names.get(
+                log_type
+            ) or self.log_group_names.get('default'):
                 if isinstance(log_groups, list):
                     query['logGroupNames'] = log_groups
                 else:
@@ -40,12 +38,13 @@ class QueryConnector(BaseQueryConnector):
                 # checking if loggroups is greater than maximum limit 20
                 if len(query['logGroupNames']) > LOG_GROUP_NAMES_LIMIT:
                     raise InvalidParameterException("Too many log groups specified, log groups maximum limit is 20")
-            # if loggroupnames is none, describe_log_groups api will be called
             else:
                 log_group_response_dict = self.client.describe_log_groups(**{})
-                log_group_names = []
-                for log_group in log_group_response_dict['logGroups']:
-                    log_group_names.append(log_group['logGroupName'])
+                log_group_names = [
+                    log_group['logGroupName']
+                    for log_group in log_group_response_dict['logGroups']
+                ]
+
                 query['logGroupNames'] = log_group_names[:LOG_GROUP_NAMES_LIMIT]
             query.pop('logType')
             response_dict = self.client.start_query(**query)

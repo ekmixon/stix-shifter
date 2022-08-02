@@ -40,15 +40,15 @@ class CbQueryStringPatternTranslator:
 
     @staticmethod
     def _format_equality(value) -> str:
-        return '{}'.format(CbQueryStringPatternTranslator._escape_value(value))
+        return f'{CbQueryStringPatternTranslator._escape_value(value)}'
 
     @staticmethod
     def _format_lt(value) -> str:
-        return '[* TO {}]'.format(CbQueryStringPatternTranslator._escape_value(value))
+        return f'[* TO {CbQueryStringPatternTranslator._escape_value(value)}]'
 
     @staticmethod
     def _format_gte(value) -> str:
-        return '[{} TO *]'.format(CbQueryStringPatternTranslator._escape_value(value))
+        return f'[{CbQueryStringPatternTranslator._escape_value(value)} TO *]'
 
 # Note: target query language doesn't support '<=' or '>' directly so we implement it indirectly for integers
     @staticmethod
@@ -72,7 +72,7 @@ class CbQueryStringPatternTranslator:
 
     @staticmethod
     def _negate_comparison(comparison_string) -> str:
-        return "-({})".format(comparison_string)
+        return f"-({comparison_string})"
 
     @staticmethod
     def _to_cb_timestamp(ts: str) -> str:
@@ -85,7 +85,7 @@ class CbQueryStringPatternTranslator:
         start = self._to_cb_timestamp(qualifier.start)
         stop = self._to_cb_timestamp(qualifier.stop)
 
-        return "({}) and last_update:[{} TO {}]".format(expression, start, stop)
+        return f"({expression}) and last_update:[{start} TO {stop}]"
 
     def _parse_expression(self, expression, qualifier=None):
         if isinstance(expression, ComparisonExpression):
@@ -101,7 +101,10 @@ class CbQueryStringPatternTranslator:
             original_stix_value = expression.value
 
             # Some values are formatted differently based on how they're being compared
-            if expression.comparator == ComparisonComparators.Equal or expression.comparator == ComparisonComparators.NotEqual:
+            if expression.comparator in [
+                ComparisonComparators.Equal,
+                ComparisonComparators.NotEqual,
+            ]:
                 value = self._format_equality(expression.value)
             elif expression.comparator == ComparisonComparators.LessThan:
                 value = self._format_lt(expression.value)
@@ -123,14 +126,13 @@ class CbQueryStringPatternTranslator:
             if expression.negated:
                 comparison_string = self._negate_comparison(comparison_string)
 
-            if qualifier is not None:
-                if isinstance(qualifier, StartStopQualifier):
-                    return self._format_start_stop_qualifier(comparison_string, qualifier)
-                else:
-                    raise RuntimeError("Unknown Qualifier: {}".format(qualifier))
-            else:
-                return "{}".format(comparison_string)
+            if qualifier is None:
+                return f"{comparison_string}"
 
+            if isinstance(qualifier, StartStopQualifier):
+                return self._format_start_stop_qualifier(comparison_string, qualifier)
+            else:
+                raise RuntimeError(f"Unknown Qualifier: {qualifier}")
         elif isinstance(expression, CombinedComparisonExpression):
             # Wrap nested combined comparison expressions in parentheses
             f1 = "({})" if isinstance(expression.expr2, CombinedComparisonExpression) else "{}"
@@ -141,13 +143,12 @@ class CbQueryStringPatternTranslator:
             query_string = (f1 + " {} " + f2).format(self._parse_expression(expression.expr2),
                                                      self.comparator_lookup[expression.operator],
                                                      self._parse_expression(expression.expr1))
-            if qualifier is not None:
-                if isinstance(qualifier, StartStopQualifier):
-                    return self._format_start_stop_qualifier(query_string, qualifier)
-                else:
-                    raise RuntimeError("Unknown Qualifier: {}".format(qualifier))
+            if qualifier is None:
+                return f"{query_string}"
+            if isinstance(qualifier, StartStopQualifier):
+                return self._format_start_stop_qualifier(query_string, qualifier)
             else:
-                return "{}".format(query_string)
+                raise RuntimeError(f"Unknown Qualifier: {qualifier}")
         elif isinstance(expression, ObservationExpression):
             query_string = self._parse_expression(expression.comparison_expression, qualifier=qualifier)
             return query_string
@@ -161,12 +162,13 @@ class CbQueryStringPatternTranslator:
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
             return self._parse_expression(expression.observation_expression, expression)
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def _add_default_timerange(self, query):
         if self.time_range and 'last_update' not in query:
-            query = "(({}) and last_update:-{}m)".format(query, self.time_range)
+            query = f"(({query}) and last_update:-{self.time_range}m)"
 
         return query
 

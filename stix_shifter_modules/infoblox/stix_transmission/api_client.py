@@ -11,12 +11,11 @@ class APIClient:
     def __init__(self, connection, configuration):
         self.logger = logger.set_logger(__name__)
         self.endpoint_start = ''
-        headers = dict()
         host_port = connection.get('host') + ':' + str(connection.get('port', ''))
-        headers['accept'] = 'application/json'
+        headers = {'accept': 'application/json'}
         auth = configuration.get('auth')
         if auth is not None and auth.get('token', None) is not None:
-            headers['Authorization'] = 'token {}'.format(auth.get('token'))
+            headers['Authorization'] = f"token {auth.get('token')}"
         url_modifier_function = None
         headers['user-agent'] = _USER_AGENT
 
@@ -55,24 +54,27 @@ class APIClient:
             return self._get_tidedbdata_results(search_id, range_start, range_end)
 
         # default behavior
-        raise RuntimeError("Unknown source provided source={}".format(payload['source']))
+        raise RuntimeError(f"Unknown source provided source={payload['source']}")
 
     def _get_dnseventdata_results(self, search_id, range_start=None, range_end=None):
         endpoint = 'api/dnsdata/v2/dns_event'
-        headers = dict()
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         payload = json.loads(search_id)
-        resp_dict = dict()
-        resp_dict["data"] = []
-
-        start = range_start if range_start else 0
-        end = range_end if range_end else 0
+        resp_dict = {"data": []}
+        start = range_start or 0
+        end = range_end or 0
         offset = start
         max_fetch_count = 10
-        for fetch_iteration in range(0, max_fetch_count):
+        for fetch_iteration in range(max_fetch_count):
             params = {"_limit": self.result_limit,"_offset": offset}
-            resp = self.client.call_api(endpoint + "?" + payload["query"], 'GET', urldata=params, headers=headers, timeout=self.timeout)
+            resp = self.client.call_api(
+                f"{endpoint}?" + payload["query"],
+                'GET',
+                urldata=params,
+                headers=headers,
+                timeout=self.timeout,
+            )
+
             resp_dict["code"] = resp.code
             if resp.code != 200:
                 if resp.code == 401:
@@ -95,7 +97,7 @@ class APIClient:
                 resp_dict["data"].append({"dnsEventData": event})
 
             if len(resp_dict["data"]) > end - start:
-                resp_dict["data"] = resp_dict["data"][0:end - start]
+                resp_dict["data"] = resp_dict["data"][:end - start]
                 break
 
             if fetch_iteration == max_fetch_count - 1:
@@ -109,20 +111,23 @@ class APIClient:
 
     def _get_dossierdata_results(self, search_id, range_start=0, range_end=None):
         endpoint = 'tide/api/services/intel/lookup/indicator'
-        headers = dict()
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         payload = json.loads(search_id)
-        resp_dict = dict()
-        resp_dict["data"] = []
-        start = range_start if range_start else 0
-        end = range_end if range_end else 0
+        start = range_start or 0
+        end = range_end or 0
 
         params = {'wait': 'true','source': 'pdns'}
 
         # NOTE: Dossier does not support pagination via multiple requests. All results returned in the response.
-        resp = self.client.call_api(endpoint + "/" + payload["threat_type"] + "?" + payload["query"], 'GET', urldata=params, headers=headers, timeout=self.timeout)
-        resp_dict["code"] = resp.code
+        resp = self.client.call_api(
+            f"{endpoint}/" + payload["threat_type"] + "?" + payload["query"],
+            'GET',
+            urldata=params,
+            headers=headers,
+            timeout=self.timeout,
+        )
+
+        resp_dict = {"data": [], "code": resp.code}
         if resp.code != 200:
             if resp.code == 401:
                 resp_dict["message"] = resp.read().decode("utf-8")
@@ -139,7 +144,7 @@ class APIClient:
                 resp_dict["data"].append({"dossierData": restructure_payload})
 
         # Trim result set based on min/max range values
-        end = end if end < len(resp_dict["data"]) else len(resp_dict["data"])
+        end = min(end, len(resp_dict["data"]))
         num_results = end - start
 
         if len(resp_dict["data"]) > end - start:
@@ -151,15 +156,10 @@ class APIClient:
 
     def _get_tidedbdata_results(self, search_id, range_start=0, range_end=None):
         endpoint = 'tide/api/data/threats/state'
-        headers = dict()
-        headers['Content-Type'] = 'application/json'
-        headers['Accept'] = 'application/json'
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         payload = json.loads(search_id)
-        resp_dict = dict()
-        resp_dict["data"] = []
-
-        start = range_start if range_start else 0
-        end = range_end if range_end else 0
+        start = range_start or 0
+        end = range_end or 0
 
         params = {"rlimit": self.result_limit,}
 
@@ -170,9 +170,16 @@ class APIClient:
             params["include_ipv6"] = "true"
 
         # NOTE: Tide does not support pagination via multiple requests. All results returned in the response.
-        resp = self.client.call_api(endpoint + "?" + payload["query"], 'GET', urldata=params, headers=headers, timeout=self.timeout)
+        resp = self.client.call_api(
+            f"{endpoint}?" + payload["query"],
+            'GET',
+            urldata=params,
+            headers=headers,
+            timeout=self.timeout,
+        )
 
-        resp_dict["code"] = resp.code
+
+        resp_dict = {"data": [], "code": resp.code}
         if resp.code != 200:
             if resp.code == 401:
                 resp_dict["message"] = resp.read().decode("utf-8")
@@ -187,7 +194,7 @@ class APIClient:
             resp_dict["data"].append({"tideDbData": i})
 
         # Trim result set based on min/max range values
-        end = end if end < len(resp_dict["data"]) else len(resp_dict["data"])
+        end = min(end, len(resp_dict["data"]))
         num_results = end - start
 
         if len(resp_dict["data"]) > end - start:

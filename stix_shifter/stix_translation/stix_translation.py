@@ -52,10 +52,12 @@ class StixTranslation:
             except Exception as ex:
                 raise UnsupportedDataSourceException("{} is an unsupported data source.".format(module))
             try:
-                if not translate_type == DIALECTS:
-                    validated_options = param_validator(module, options, 'connection.options')
-                else:
-                    validated_options = {}
+                validated_options = (
+                    {}
+                    if translate_type == DIALECTS
+                    else param_validator(module, options, 'connection.options')
+                )
+
                 entry_point = connector_module.EntryPoint(options=validated_options)
             except Exception as ex:
                 track = traceback.format_exc()
@@ -123,6 +125,6 @@ class StixTranslation:
         except Exception as ex:
             self.logger.error('Caught exception: ' + str(ex) + " " + str(type(ex)))
             self.logger.debug(exception_to_string(ex))
-            response = dict()
+            response = {}
             ErrorResponder.fill_error(response, message_struct={'exception': ex})
             return response

@@ -50,9 +50,12 @@ class CSQueryStringPatternTranslator:
         start = self._to_cs_timestamp(qualifier.start)
         stop = self._to_cs_timestamp(qualifier.stop)
 
-        start_stop_query = "(behaviors.timestamp:>= '{}' + behaviors.timestamp:<= '{}')".format(start, stop)
+        start_stop_query = (
+            f"(behaviors.timestamp:>= '{start}' + behaviors.timestamp:<= '{stop}')"
+        )
 
-        return "({}) + {}".format(expression, start_stop_query)
+
+        return f"({expression}) + {start_stop_query}"
 
     def _parse_expression(self, expression, qualifier=None):
         if isinstance(expression, ComparisonExpression):
@@ -86,9 +89,9 @@ class CSQueryStringPatternTranslator:
                 if isinstance(qualifier, StartStopQualifier):
                     query_string = self._format_start_stop_qualifier(query_string, qualifier)
                 else:
-                    raise RuntimeError("Unknown Qualifier: {}".format(qualifier))
+                    raise RuntimeError(f"Unknown Qualifier: {qualifier}")
 
-            return '({})'.format(query_string)
+            return f'({query_string})'
 
         elif isinstance(expression, CombinedComparisonExpression):
             # Wrap nested combined comparison expressions in parentheses
@@ -98,13 +101,12 @@ class CSQueryStringPatternTranslator:
             query_string = (f1 + " {} " + f2).format(self._parse_expression(expression.expr2),
                                                      self.comparator_lookup[expression.operator],
                                                      self._parse_expression(expression.expr1))
-            if qualifier is not None:
-                if isinstance(qualifier, StartStopQualifier):
-                    return self._format_start_stop_qualifier(query_string, qualifier)
-                else:
-                    raise RuntimeError("Unknown Qualifier: {}".format(qualifier))
+            if qualifier is None:
+                return f"{query_string}"
+            if isinstance(qualifier, StartStopQualifier):
+                return self._format_start_stop_qualifier(query_string, qualifier)
             else:
-                return "{}".format(query_string)
+                raise RuntimeError(f"Unknown Qualifier: {qualifier}")
         elif isinstance(expression, ObservationExpression):
             query_string = self._parse_expression(expression.comparison_expression, qualifier=qualifier)
             return query_string
@@ -121,28 +123,24 @@ class CSQueryStringPatternTranslator:
         elif hasattr(expression, 'qualifier') and hasattr(expression, 'observation_expression'):
             return self._parse_expression(expression.observation_expression, expression)
         else:
-            raise RuntimeError("Unknown Recursion Case for expression={}, type(expression)={}".format(
-                expression, type(expression)))
+            raise RuntimeError(
+                f"Unknown Recursion Case for expression={expression}, type(expression)={type(expression)}"
+            )
 
     def _get_negate_comparator(self):
         return self.comparator_lookup[ComparisonComparators.NotEqual]
 
     def _add_default_timerange(self, query):
         if self.time_range and 'behaviors.timestamp' not in query:
-            d = (datetime.today() - timedelta(hours=0, minutes=self.time_range)).isoformat()
-            n_query = "(({}) + behaviors.timestamp:> '{}')".format(query, d)
-            return n_query
+            d = (datetime.now() - timedelta(hours=0, minutes=self.time_range)).isoformat()
+            return f"(({query}) + behaviors.timestamp:> '{d}')"
 
         return query
 
     def _add_default_timerange_to_queries(self, queries):
-        n_queries = list()
         if not isinstance(queries, list):
             queries = [queries]
-        for q in queries:
-            n_queries.append(self._add_default_timerange(q))
-
-        return n_queries
+        return [self._add_default_timerange(q) for q in queries]
 
     def parse_expression(self, pattern: Pattern):
         queries = self._parse_expression(pattern)
@@ -153,5 +151,4 @@ def translate_pattern(pattern: Pattern, data_model_mapping, options):
     time_range = options['time_range']
 
     translated_statements_lst = CSQueryStringPatternTranslator(pattern, data_model_mapping, time_range)
-    translated_statements = ",".join(translated_statements_lst.queries)
-    return translated_statements
+    return ",".join(translated_statements_lst.queries)

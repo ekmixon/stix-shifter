@@ -55,7 +55,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert check_async
 
     @staticmethod
-    @patch('{}.ping_box'.format(API_PATH))
+    @patch(f'{API_PATH}.ping_box')
     def test_ping_endpoint_good_return(mock_ping_response):
         config = {
             "auth": {
@@ -80,7 +80,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert ping_response['success']
 
     @staticmethod
-    @patch('{}.ping_box'.format(API_PATH))
+    @patch(f'{API_PATH}.ping_box')
     def test_ping_endpoint_not_working_return(mock_ping_response):
         mocked_return_value = MockHttpResponse('/missing')
         mock_ping_response.return_value = BigFixMockHttpXMLResponse(200, mocked_return_value)
@@ -93,7 +93,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert ping_response['success'] is False
 
     @staticmethod
-    @patch('{}.ping_box'.format(API_PATH))
+    @patch(f'{API_PATH}.ping_box')
     def test_ping_endpoint_exception(mock_ping_response):
         mocked_return_value = MockHttpResponse('/exception')
         mock_ping_response.return_value = BigFixMockHttpXMLResponse(200, mocked_return_value)
@@ -108,7 +108,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert ping_response['error'] is not None
 
     @staticmethod
-    @patch('{}.ping_box'.format(API_PATH))
+    @patch(f'{API_PATH}.ping_box')
     def test_ping_endpoint_bad_return_code(mock_ping_response):
         config = {
             "auth": {
@@ -135,7 +135,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert ping_response['error'] is not None
 
     @staticmethod
-    @patch('{}.create_search'.format(API_PATH))
+    @patch(f'{API_PATH}.create_search')
     def test_query_response_found(mock_query_response):
         config = {
             "auth": {
@@ -151,11 +151,11 @@ class TestBigfixConnection(unittest.TestCase):
         }
 
         big_fix_return_value = '<?xml version="1.0" encoding="UTF-8"?>' \
-                               '<BESAPI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
-                               ' xsi:noNamespaceSchemaLocation="BESAPI.xsd">' \
-                               '<ClientQuery ' \
-                               'Resource="https://fake.computer.name:52311/api/clientquery/105">' \
-                               '<ID>105</ID></ClientQuery></BESAPI>'
+                                   '<BESAPI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+                                   ' xsi:noNamespaceSchemaLocation="BESAPI.xsd">' \
+                                   '<ClientQuery ' \
+                                   'Resource="https://fake.computer.name:52311/api/clientquery/105">' \
+                                   '<ID>105</ID></ClientQuery></BESAPI>'
 
         mocked_return_value = MockHttpResponse(big_fix_return_value)
         mock_query_response.return_value = BigFixMockHttpXMLResponse(200, mocked_return_value)
@@ -171,7 +171,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert query_response['search_id'] == "105"
 
     @staticmethod
-    @patch('{}.create_search'.format(API_PATH))
+    @patch(f'{API_PATH}.create_search')
     def test_query_response_not_found(mock_query_response):
         config = {
             "auth": {
@@ -203,7 +203,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert query_response['search_id'] == "UNKNOWN"
 
     @staticmethod
-    @patch('{}.create_search'.format(API_PATH))
+    @patch(f'{API_PATH}.create_search')
     def test_query_response_exception(mock_query_response):
         big_fix_return_value = 'big fix did not return proper value'
         mocked_return_value = MockHttpResponse(big_fix_return_value)
@@ -221,7 +221,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'error' in query_response
 
     @staticmethod
-    @patch('{}.create_search'.format(API_PATH))
+    @patch(f'{API_PATH}.create_search')
     def test_query_response_bad_return_code(mock_query_response):
         config = {
             "auth": {
@@ -239,7 +239,7 @@ class TestBigfixConnection(unittest.TestCase):
         big_fix_return_value = 'big fix did not return proper value'
         mocked_return_value = MockHttpResponse(big_fix_return_value)
         mock_query_response.return_value = BigFixMockHttpXMLResponse(200, mocked_return_value)
-        
+
         query = 'bigfix query text'
 
         entry_point = EntryPoint(connection, config)
@@ -251,8 +251,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'error' in query_response
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     def test_status_response_completed(mock_sync_query_results, mock_status_response):
         config = {
             "auth": {
@@ -287,8 +287,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 100
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     @patch('stix_shifter_modules.bigfix.stix_transmission.status_connector.time')
     def test_status_response_running(mock_time, mock_sync_query_results, mock_status_response):
         config = {
@@ -326,8 +326,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 0
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     @patch('stix_shifter_modules.bigfix.stix_transmission.status_connector.time')
     def test_status_response_running_50_complete(mock_time, mock_sync_query_results, mock_status_response):
         config = {
@@ -365,8 +365,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 50
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     @patch('stix_shifter_modules.bigfix.stix_transmission.status_connector.time')
     def test_status_response_running_75_complete(mock_time, mock_sync_query_results, mock_status_response):
         config = {
@@ -404,8 +404,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 100
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     def test_status_response_error(mock_sync_query_results, mock_status_response):
         config = {
             "auth": {
@@ -440,8 +440,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 100
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     @patch('stix_shifter_modules.bigfix.stix_transmission.status_connector.time')
     def test_status_response_running_bad_client_query(mock_time, mock_sync_query_results, mock_status_response):
         config = {
@@ -479,8 +479,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['progress'] == 0
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     def test_status_response_error_exception_status(mock_sync_query_results, mock_status_response):
         mocked_sync_query_return_value = MockHttpResponse('bad answer')
         mock_sync_query_results.return_value = BigFixMockHttpXMLResponse(200, mocked_sync_query_return_value)
@@ -501,8 +501,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'progress' not in status_response
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     def test_status_response_error_exception_result(mock_sync_query_results, mock_status_response):
         mocked_sync_query_return_value = MockHttpResponse('bad answer')
         mock_sync_query_results.return_value = BigFixMockHttpXMLResponse(200, mocked_sync_query_return_value)
@@ -522,8 +522,8 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'progress' not in status_response
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
-    @patch('{}.get_sync_query_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
+    @patch(f'{API_PATH}.get_sync_query_results')
     def test_status_response_error_exception_result_bad_return_code(mock_sync_query_results,
                                                                     mock_status_response):
         config = {
@@ -567,7 +567,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert status_response['success'] is True
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_file(mock_results_response):
         config = {
             "auth": {
@@ -622,7 +622,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert len(results_response['data']) == 1
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_process(mock_results_response):
         config = {
             "auth": {
@@ -678,7 +678,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert len(results_response['data']) == 1
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_network(mock_results_response):
         config = {
             "auth": {
@@ -732,7 +732,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert len(results_response['data']) == 1
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_mac_addr(mock_results_response):
         config = {
             "auth": {
@@ -784,7 +784,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert len(results_response['data']) == 2
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_exeception(mock_results_response):
         mock_results_response.side_effect = Exception('an error getting data')
 
@@ -800,7 +800,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'error' in results_response
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_bad_return_code(mock_results_response):
         mocked_return_value = """{
                                     "reportingAgents": "100",
@@ -838,7 +838,7 @@ class TestBigfixConnection(unittest.TestCase):
         assert 'error' in results_response
 
     @staticmethod
-    @patch('{}.get_search_results'.format(API_PATH))
+    @patch(f'{API_PATH}.get_search_results')
     def test_results_response_bad_json(mock_results_response):
         mocked_return_value = """{
                                     "reportingAgents": "100",

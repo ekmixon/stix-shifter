@@ -13,8 +13,8 @@ class DeleteConnector(BaseDeleteConnector):
         :param search_id: str, search id
         :return: dict
         """
-        return_obj = dict()
-        response_dict = dict()
+        return_obj = {}
+        response_dict = {}
         try:
             search_id = search_id.split(':')[0]
             if 'dummy' in search_id:

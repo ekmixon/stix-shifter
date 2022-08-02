@@ -13,14 +13,9 @@ class QueryConnector(BaseQueryConnector):
         try:
             jobid = self.api_client.submit_sql(q)
         except SyntaxError as e:
-            return_obj = dict()
-            return_obj['success'] = False
-            return_obj['error'] = repr(e)
+            return_obj = {'success': False, 'error': repr(e)}
             return return_obj
 
         # Construct a response object
-        return_obj = dict()
-        return_obj['success'] = True
-        return_obj['search_id'] = jobid
-
+        return_obj = {'success': True, 'search_id': jobid}
         return return_obj

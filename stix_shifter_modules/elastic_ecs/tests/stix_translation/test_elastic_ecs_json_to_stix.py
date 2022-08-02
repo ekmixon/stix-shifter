@@ -285,7 +285,7 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert (nt_object['protocols'] == ['ipv4', 'tcp'])
 
         ip_ref = nt_object['dst_ref']
-        assert (ip_ref in objects), f"dst_ref with key {nt_object['dst_ref']} not found"
+        assert (ip_ref in objects), f"dst_ref with key {ip_ref} not found"
         ip_obj = objects[ip_ref]
         assert (ip_obj.keys() == {'type', 'value', 'resolves_to_refs'})
         assert (ip_obj['type'] == 'ipv4-addr')
@@ -362,7 +362,7 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert (event_object is not None), 'x-oca-event object type not found'
 
         host_ref = event_object['host_ref']
-        assert (host_ref in objects), f"host_ref with key {event_object['host_ref']} not found"
+        assert (host_ref in objects), f"host_ref with key {host_ref} not found"
         host_obj = objects[host_ref]
         assert(host_obj['type'] == 'x-oca-asset')
         assert(host_obj['hostname'] == 'HOST-NAME')
@@ -376,7 +376,10 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert(mac_obj['value'] == "00:01:02:0a:0b:0c")
 
         process_ref = event_object['process_ref']
-        assert(process_ref in objects), f"process_ref with key {event_object['process_ref']} not found"
+        assert (
+            process_ref in objects
+        ), f"process_ref with key {process_ref} not found"
+
         process_obj = objects[process_ref]
         assert(process_obj['type'] == 'process')
         assert(process_obj['command_line'] == "C:\\WINDOWS\\system32\\wbem\\unsecapp.exe -Embedding")
@@ -391,7 +394,10 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert(binary_parent_dir_obj['path'] == "C:\\Windows\\System32\\wbem")
 
         process_parent_ref = process_obj['parent_ref']
-        assert(process_parent_ref in objects), f"parent_ref with key {process_obj['parent_ref']} not found"
+        assert (
+            process_parent_ref in objects
+        ), f"parent_ref with key {process_parent_ref} not found"
+
         parent_obj = objects[process_parent_ref]
         assert(parent_obj.keys() == {'type', 'pid', 'binary_ref', 'command_line', 'name'})
         assert(parent_obj['type'] == "process")
@@ -409,7 +415,7 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert(binary_parent_dir_obj['path'] == "C:\\Windows\\System32")
 
         file_ref = event_object['file_ref']
-        assert(file_ref in objects), f"file_ref with key {event_object['file_ref']} not found"
+        assert (file_ref in objects), f"file_ref with key {file_ref} not found"
         file_obj = objects[file_ref]
         assert(file_obj.keys() == {'type', 'name', 'parent_directory_ref'})
         assert(file_obj['type'] == 'file')
@@ -421,25 +427,31 @@ class TestElasticEcsTransform(unittest.TestCase, object):
         assert(parent_obj['path'] == "/home/alice")
 
         domain_ref = event_object['domain_ref']
-        assert(domain_ref in objects), f"domain_ref with key {event_object['domain_ref']} not found"
+        assert (domain_ref in objects), f"domain_ref with key {domain_ref} not found"
         domain_obj = objects[domain_ref]
         assert(domain_obj.keys() == {'type', 'value'})
         assert(domain_obj['type'] == 'domain-name')
         assert(domain_obj['value'] == "domain.com")
 
         registry_ref = event_object['registry_ref']
-        assert(registry_ref in objects), f"registry_ref with key {event_object['registry_ref']} not found"
+        assert (
+            registry_ref in objects
+        ), f"registry_ref with key {registry_ref} not found"
+
         reg_obj = objects[registry_ref]
         assert(reg_obj['type'] == 'windows-registry-key')
         assert(reg_obj['key'] == 'HKEY_LOCAL_MACHINE\\a\\b\\c')
 
         network_ref = event_object['network_ref']
-        assert(network_ref in objects), f"network_ref with key {event_object['network_ref']} not found"
+        assert (
+            network_ref in objects
+        ), f"network_ref with key {network_ref} not found"
+
         nt_obj = objects[network_ref]
         assert(nt_obj['type'] == 'network-traffic')
 
         user_ref = event_object['user_ref']
-        assert(user_ref in objects), f"user_ref with key {event_object['user_ref']} not found"
+        assert (user_ref in objects), f"user_ref with key {user_ref} not found"
         user_obj = objects[user_ref]
         assert(user_obj['type'] == 'user-account')
         assert(user_obj['user_id'] == 'USERNAME')
